@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Percaloid Engine v2 - 3 Layer</title>
+    <title>Percaloid Engine v2 - 3 Layer Enhanced</title>
     <style>
         * {
             margin: 0;
@@ -979,8 +979,6 @@
                 layer.macros[macro.key] = macro.default;
             });
 
-            // All layers start with empty patterns - user programs from scratch
-
             return layer;
         }
 
@@ -1003,12 +1001,6 @@
 
         // Convert clock division string to Tone.js time notation
         function getLoopInterval(clockDiv, patternLength) {
-            // Clock division defines how long the entire pattern takes
-            // e.g., "1/1" = pattern completes in 1 bar
-            //       "1/2" = pattern completes in 1/2 bar
-            //       "2/1" = pattern completes in 2 bars
-            
-            // Map clock division to number of bars
             const barsMap = {
                 '1/64': 1/64,
                 '1/32': 1/32,
@@ -1023,17 +1015,12 @@
             
             const totalBars = barsMap[clockDiv];
             const barsPerStep = totalBars / patternLength;
-            
-            // Convert bars per step to Tone.js notation
-            // 1 bar = "1m", 1/2 bar = "2n", 1/4 bar = "4n", etc.
             const fraction = 1 / barsPerStep;
             
             if (fraction <= 1) {
-                // Multiple bars per step
                 const bars = Math.round(1 / fraction);
                 return `${bars}m`;
             } else {
-                // Fraction of a bar per step
                 const note = Math.round(fraction);
                 return `${note}n`;
             }
@@ -1058,14 +1045,23 @@
             const baseRatio1 = lerp(0.25, 8.0, v.ratio1);
             const baseRatio2 = lerp(0.5, 12.0, v.ratio2);
             
-            const ratio1 = lerp(baseRatio1, 1.618 * (1 + m.metallic * 2), m.metallic * 0.8);
-            const ratio2 = lerp(baseRatio2, 2.414 * (1 + m.metallic * 2.5), m.metallic * 0.8);
+            // HARMONIC: Pull toward integer harmonics (opposite of Metal)
+            // At 0: no change, At 1.0: strong integer harmonics (8x, 12x multipliers)
+            const harmonicPull1 = lerp(1.0, 8.0, m.harmonics);
+            const harmonicPull2 = lerp(1.0, 12.0, m.harmonics);
             
-            const harmonicRatio1Mod = 1 + (m.harmonics * 3.0);
-            const harmonicRatio2Mod = 1 + (m.harmonics * 4.0);
+            // METAL: Inharmonic FM using golden/silver ratios
+            // Golden ratio φ ≈ 1.618, Silver ratio δ ≈ 2.414
+            const goldenRatio = 1.618033988749895;
+            const silverRatio = 2.414213562373095;
             
-            const finalRatio1 = ratio1 * harmonicRatio1Mod;
-            const finalRatio2 = ratio2 * harmonicRatio2Mod;
+            // Metal detunes ratios toward inharmonic relationships
+            const metalRatio1 = lerp(baseRatio1, goldenRatio * (1 + m.metallic * 2), m.metallic * 0.8);
+            const metalRatio2 = lerp(baseRatio2, silverRatio * (1 + m.metallic * 2.5), m.metallic * 0.8);
+            
+            // Combine Harmonic (pulls to integers) and Metal (pulls to inharmonic)
+            const finalRatio1 = lerp(metalRatio1, Math.round(metalRatio1) * harmonicPull1, m.harmonics * 0.7);
+            const finalRatio2 = lerp(metalRatio2, Math.round(metalRatio2) * harmonicPull2, m.harmonics * 0.7);
             
             const baseIndex = lerp(15, 0.3, effectiveShape);
             const modIndex = baseIndex * (1 + m.metallic * 5) * v.fmIndex * 4;
@@ -1073,24 +1069,40 @@
             const tensionAttackMult = lerp(0.5, 3.0, m.tension);
             const tensionTransient = lerp(0.5, 4.0, m.tension);
             
-            // Attack controlled by user parameter with tension modulation
-            const envAttack = lerp(0.001, 0.2, v.attack) * tensionAttackMult;
-            const envDecay = expMap(0.005, 2.0, effectiveShape * (1 + m.decay * 1.5));
-            const envSustain = smoothstep(0.3, 1, effectiveShape * m.melodicize) * 0.7;
-            const envRelease = envDecay * lerp(0.3, 2.0, m.decay);
+            // MELODIC: Transform from percussive to sustained
+            // At 0%: Short decay, no sustain (percussive)
+            // At 100%: 8x longer decay, 85% sustain, 3x longer release
+            const melodicDecayMult = lerp(1.0, 8.0, m.melodicize);
+            const melodicReleaseMult = lerp(1.0, 3.0, m.melodicize);
             
+            const envAttack = lerp(0.001, 0.2, v.attack) * tensionAttackMult;
+            const envDecay = expMap(0.005, 2.0, effectiveShape * (1 + m.decay * 1.5)) * melodicDecayMult;
+            const envSustain = m.melodicize * 0.85; // Linear 0-85% sustain based on Melodic
+            const envRelease = envDecay * lerp(0.3, 2.0, m.decay) * melodicReleaseMult;
+            
+            // CONTRAST: Exponential filter resonance (0.5 to 50 Q) + saturation character
+            const contrastExp = Math.pow(m.contrast, 2.5); // Exponential curve for dramatic changes
+            const filterQ = expMap(0.5, 50, contrastExp);
+            
+            // BRIGHT: High frequency sparkle with dedicated high shelf boost
             const brightnessBoost = lerp(1.0, 8.0, m.brightness);
             const filterCutoff = expMap(150, 18000, effectiveShape * brightnessBoost);
-            const filterQ = lerp(0.3, 35, m.metallic * m.brightness) * (1 + m.contrast * 2);
             
+            // High shelf boost (0 to +12dB)
+            const highShelfGain = m.brightness * 12;
+            
+            // METAL: Comb filter for metallic resonance and ringing
             const combMix = m.metallic * 0.9 * (1 - effectiveShape * 0.2);
             const combFeedback = lerp(0.5, 0.97, m.metallic);
+            // Variable comb delay for pitch control (creates metallic overtones)
+            const combDelayTime = expMap(0.0005, 0.01, 1 - m.metallic);
             
-            const driveAmount = lerp(0.1, 15, m.contrast * v.drive);
-            const transientGain = lerp(0.2, 4.0, m.contrast * tensionTransient);
+            const driveAmount = lerp(0.1, 15, contrastExp * v.drive);
+            const transientGain = lerp(0.2, 4.0, contrastExp * tensionTransient);
             
-            const airMix = m.air * 0.8;
-            const airCutoff = lerp(4000, 12000, m.air);
+            // AIR: Wider frequency range (3kHz-15kHz) with more prominence
+            const airMix = m.air * 1.2; // Increased prominence
+            const airCutoff = lerp(3000, 15000, m.air); // Wider range
             
             const pitchJitter = m.entropy * 80;
             const timingJitter = m.entropy * 0.05;
@@ -1109,6 +1121,7 @@
                 filterQ,
                 combMix,
                 combFeedback,
+                combDelayTime,
                 driveAmount,
                 transientGain,
                 pitchJitter,
@@ -1116,7 +1129,8 @@
                 airMix,
                 airCutoff,
                 brightnessBoost,
-                tensionTransient
+                tensionTransient,
+                highShelfGain
             };
         }
 
@@ -1124,7 +1138,7 @@
             if (initialized) return;
             
             await Tone.start();
-            console.log('🎵 Percaloid Engine v2 - 3 Layer - Audio Started');
+            console.log('🎵 Percaloid Engine v2 - 3 Layer Enhanced - Audio Started');
             
             // Create 3 independent audio engines
             for (let i = 0; i < 3; i++) {
@@ -1132,6 +1146,19 @@
                     type: 'lowpass',
                     frequency: 3000,
                     Q: 2
+                });
+                
+                // High shelf for BRIGHT control
+                const highShelf = new Tone.EQ3({
+                    high: 0,
+                    highFrequency: 3000
+                });
+                
+                // Comb filter for METAL control
+                const combDelay = new Tone.FeedbackDelay({
+                    delayTime: 0.003,
+                    feedback: 0.7,
+                    wet: 0
                 });
                 
                 const distortion = new Tone.Distortion({
@@ -1151,10 +1178,12 @@
                 });
                 
                 const limiter = new Tone.Limiter(-3);
-                const masterGain = new Tone.Gain(0.5); // Lower gain per layer to prevent clipping
+                const masterGain = new Tone.Gain(0.5);
                 
-                distortion.connect(filter);
-                filter.connect(masterGain);
+                distortion.connect(combDelay);
+                combDelay.connect(filter);
+                filter.connect(highShelf);
+                highShelf.connect(masterGain);
                 masterGain.connect(limiter);
                 limiter.toDestination();
                 masterGain.connect(delay);
@@ -1238,6 +1267,8 @@
                     airFilter,
                     airEnv,
                     filter,
+                    highShelf,
+                    combDelay,
                     distortion,
                     delay,
                     reverb,
@@ -1256,25 +1287,15 @@
                         
                         let shouldTrigger = false;
                         
-                        // Density at 0.5 (12 o'clock) = baseline
-                        // Below 0.5: thins out programmed steps
-                        // Above 0.5: adds generative fills to unprogrammed steps
-                        
                         if (step.t) {
-                            // Programmed step
                             if (currentMacros.density >= 0.5) {
-                                // Above 50%: always fire programmed steps
                                 shouldTrigger = true;
                             } else {
-                                // Below 50%: probability scales from 0% at density=0 to 100% at density=0.5
                                 const probability = currentMacros.density / 0.5;
                                 shouldTrigger = Math.random() < probability;
                             }
                         } else {
-                            // Unprogrammed step
                             if (currentMacros.density > 0.5) {
-                                // Above 50%: chance of generative fill
-                                // Scales from 0% at density=0.5 to 100% at density=1.0
                                 const fillProbability = (currentMacros.density - 0.5) / 0.5;
                                 shouldTrigger = Math.random() < fillProbability;
                             }
@@ -1284,7 +1305,6 @@
                             triggerNote(layerIndex, step, currentMacros, layer, time);
                         }
                         
-                        // Only update UI for currently visible layer
                         if (layerIndex === globalState.currentLayer) {
                             requestAnimationFrame(updateUI);
                         }
@@ -1322,9 +1342,10 @@
             
             freq *= Math.pow(2, (layerState.voice.tune - 0.5) * 24 / 12);
             
+            // SPREAD: Now 120 cents (up from 20!)
             const spreadAmount = currentMacros.spread;
             const stepParity = globalState.currentStep % 2;
-            const spreadCents = stepParity ? spreadAmount * 20 : -spreadAmount * 20;
+            const spreadCents = stepParity ? spreadAmount * 120 : -spreadAmount * 120; // 120 cents!
             freq *= Math.pow(2, spreadCents / 1200);
             
             const vel = step.acc ? 1.0 : 0.7;
@@ -1344,6 +1365,7 @@
             engine.fmSynth.envelope.sustain = params.envSustain;
             engine.fmSynth.envelope.release = params.envRelease;
             
+            // FM RATIO 2: Now always active (removed Shape > 0.3 gate)
             engine.fmSynth2.harmonicity.value = finalRatio2;
             engine.fmSynth2.modulationIndex.value = finalModIndex * 0.7;
             engine.fmSynth2.envelope.attack = params.envAttack;
@@ -1353,6 +1375,14 @@
             
             engine.filter.frequency.value = params.filterCutoff;
             engine.filter.Q.value = params.filterQ;
+            
+            // BRIGHT: High shelf boost
+            engine.highShelf.high.value = params.highShelfGain;
+            
+            // METAL: Comb filter
+            engine.combDelay.delayTime.value = params.combDelayTime;
+            engine.combDelay.feedback.value = params.combFeedback;
+            engine.combDelay.wet.value = params.combMix;
             
             engine.airFilter.frequency.value = params.airCutoff;
             
@@ -1370,9 +1400,8 @@
             
             engine.fmSynth.triggerAttackRelease(noteName, duration, time, synthVel);
             
-            if (currentMacros.shape > 0.3) {
-                engine.fmSynth2.triggerAttackRelease(noteName, duration * 0.8, time, synthVel * 0.5);
-            }
+            // FM RATIO 2: Always active now
+            engine.fmSynth2.triggerAttackRelease(noteName, duration * 0.8, time, synthVel * 0.5);
             
             if (params.noiseMix > 0.1) {
                 engine.noiseEnv.triggerAttackRelease(
@@ -1436,7 +1465,6 @@
         function updateUI() {
             const layer = getCurrentLayer();
             
-            // Update sequencer
             document.querySelectorAll('.step').forEach((el, i) => {
                 if (i >= layer.length) {
                     el.parentElement.style.display = 'none';
@@ -1461,7 +1489,6 @@
                 }
             });
             
-            // Update note sliders
             document.querySelectorAll('.note-slider').forEach((slider, i) => {
                 if (i >= layer.length) return;
                 slider.value = layer.pattern[i].note;
@@ -1472,7 +1499,6 @@
                 }
             });
             
-            // Update knobs
             document.querySelectorAll('.knob').forEach(knob => {
                 const macro = knob.dataset.macro;
                 if (!macro || !layer.macros.hasOwnProperty(macro)) return;
@@ -1498,7 +1524,6 @@
             document.getElementById('scaleSelect').value = globalState.scale;
             document.getElementById('octaveSelect').value = layer.octaveRange;
             
-            // Update mode buttons
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.mode === layer.mode);
             });
@@ -1570,7 +1595,6 @@
                 step.className = 'step';
                 step.dataset.index = i;
                 
-                // Better touch handling for mobile
                 let touchStartTime = 0;
                 let touchMoved = false;
                 
@@ -1593,20 +1617,16 @@
                     const layer = getCurrentLayer();
                     
                     if (touchDuration > 400) {
-                        // Long press - toggle accent
                         layer.pattern[i].acc = 1 - layer.pattern[i].acc;
                         navigator.vibrate && navigator.vibrate(50);
                     } else {
-                        // Short press - toggle step
                         layer.pattern[i].t = 1 - layer.pattern[i].t;
                     }
                     
                     updateUI();
                 }, { passive: false });
                 
-                // Desktop click handler
                 step.onclick = (e) => {
-                    // Ignore if this was triggered by touch
                     if (e.detail === 0) return;
                     
                     const layer = getCurrentLayer();
@@ -1787,12 +1807,10 @@
                 globalState.playing = false;
                 this.classList.remove('playing');
                 this.textContent = '▶';
-                // Reset all layer steps
                 globalState.layers.forEach(layer => {
                     layer.currentStep = 0;
                 });
             } else {
-                // Reset all layer steps
                 globalState.layers.forEach(layer => {
                     layer.currentStep = 0;
                 });
@@ -1825,20 +1843,15 @@
             layer.length = parseInt(this.value);
             layer.currentStep = 0;
             
-            // If playing, restart all loops to keep everything in sync
             if (wasPlaying && initialized) {
-                // Stop transport
                 Tone.Transport.stop();
                 loops.forEach(loop => loop.stop());
                 
-                // Update the changed layer's interval
                 loops[layerIndex].interval = getLoopInterval(layer.clockDivision, layer.length);
                 
-                // Reset all positions
                 globalState.layers.forEach(l => l.currentStep = 0);
                 Tone.Transport.position = 0;
                 
-                // Restart all loops together
                 loops.forEach(loop => loop.start(0));
                 Tone.Transport.start();
             }
@@ -1853,20 +1866,15 @@
             
             layer.clockDivision = this.value;
             
-            // If playing, restart all loops to keep everything in sync
             if (wasPlaying && initialized) {
-                // Stop transport
                 Tone.Transport.stop();
                 loops.forEach(loop => loop.stop());
                 
-                // Update the changed layer's interval
                 loops[layerIndex].interval = getLoopInterval(layer.clockDivision, layer.length);
                 
-                // Reset all positions
                 globalState.layers.forEach(l => l.currentStep = 0);
                 Tone.Transport.position = 0;
                 
-                // Restart all loops together
                 loops.forEach(loop => loop.start(0));
                 Tone.Transport.start();
                 
@@ -2065,7 +2073,7 @@
         // ============================================================================
         
         window.addEventListener('load', () => {
-            console.log('🚀 Percaloid Engine v2 - 3 Layer System');
+            console.log('🚀 Percaloid Engine v2 - 3 Layer Enhanced System');
             initMacrosGrid();
             initSequencerGrid();
             initModeSelector();
