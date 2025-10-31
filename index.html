@@ -390,11 +390,12 @@
 
         .slider-container {
             position: relative;
-            height: 12px;
+            height: 20px;
             background: rgba(0, 0, 0, 0.6);
             border-radius: 6px;
             overflow: hidden;
             border: 1px solid rgba(109, 217, 219, 0.2);
+            cursor: pointer;
         }
 
         .slider-fill {
@@ -659,6 +660,21 @@
             </div>
 
             <div class="control-group">
+                <label class="control-label">Clock</label>
+                <select class="select-input" id="clockDivSelect">
+                    <option value="1/64">1/64</option>
+                    <option value="1/32">1/32</option>
+                    <option value="1/16">1/16</option>
+                    <option value="1/8">1/8</option>
+                    <option value="1/4">1/4</option>
+                    <option value="1/2">1/2</option>
+                    <option value="1/1" selected>1 Bar</option>
+                    <option value="2/1">2 Bars</option>
+                    <option value="4/1">4 Bars</option>
+                </select>
+            </div>
+
+            <div class="control-group">
                 <label class="control-label">Root</label>
                 <select class="select-input" id="rootSelect">
                     <option value="C">C</option>
@@ -746,6 +762,14 @@
                     <div class="slider-container">
                         <div class="slider-fill" id="tuneFill"></div>
                         <input type="range" class="slider" id="tuneSlider" min="0" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="voice-control">
+                    <label class="control-label">Attack</label>
+                    <div class="slider-container">
+                        <div class="slider-fill" id="attackFill"></div>
+                        <input type="range" class="slider" id="attackSlider" min="0" max="100" value="10">
                     </div>
                 </div>
 
@@ -887,7 +911,7 @@
 
         const macroDefinitions = [
             { key: 'shape', label: 'Shape', default: 0.35 },
-            { key: 'density', label: 'Density', default: 0.20 },
+            { key: 'density', label: 'Density', default: 0.5 },
             { key: 'entropy', label: 'Entropy', default: 0.15 },
             { key: 'contrast', label: 'Contrast', default: 0.60 },
             { key: 'melodicize', label: 'Melodic', default: 0.10 },
@@ -906,9 +930,7 @@
         
         const globalState = {
             tempo: 120,
-            length: 16,
             playing: false,
-            currentStep: 0,
             root: 'D',
             scale: 'minor',
             currentLayer: 0,
@@ -923,13 +945,17 @@
                 octaveRange: 3,
                 currentScene: 'A',
                 morphAmount: 0,
+                length: 16,
+                clockDivision: '1/1',
+                currentStep: 0,
                 macros: {},
                 voice: {
                     drive: 0.3,
                     tune: 0.5,
                     ratio1: 0.5,
                     ratio2: 0.6,
-                    fmIndex: 0.4
+                    fmIndex: 0.4,
+                    attack: 0.1
                 },
                 fx: {
                     delayMix: 0.25,
@@ -953,11 +979,7 @@
                 layer.macros[macro.key] = macro.default;
             });
 
-            // Set default pattern based on layer
-            if (layerIndex === 0) {
-                // Layer 1: Kick pattern
-                [0, 4, 8, 12].forEach(i => layer.pattern[i].t = 1);
-            }
+            // All layers start with empty patterns - user programs from scratch
 
             return layer;
         }
@@ -976,8 +998,46 @@
         // AUDIO ENGINE - 3 SEPARATE CHAINS
         // ============================================================================
         
-        let loop, initialized = false;
+        let loops = [], initialized = false;
         const audioEngines = [];
+
+        // Convert clock division string to Tone.js time notation
+        function getLoopInterval(clockDiv, patternLength) {
+            // Clock division defines how long the entire pattern takes
+            // e.g., "1/1" = pattern completes in 1 bar
+            //       "1/2" = pattern completes in 1/2 bar
+            //       "2/1" = pattern completes in 2 bars
+            
+            // Map clock division to number of bars
+            const barsMap = {
+                '1/64': 1/64,
+                '1/32': 1/32,
+                '1/16': 1/16,
+                '1/8': 1/8,
+                '1/4': 1/4,
+                '1/2': 1/2,
+                '1/1': 1,
+                '2/1': 2,
+                '4/1': 4
+            };
+            
+            const totalBars = barsMap[clockDiv];
+            const barsPerStep = totalBars / patternLength;
+            
+            // Convert bars per step to Tone.js notation
+            // 1 bar = "1m", 1/2 bar = "2n", 1/4 bar = "4n", etc.
+            const fraction = 1 / barsPerStep;
+            
+            if (fraction <= 1) {
+                // Multiple bars per step
+                const bars = Math.round(1 / fraction);
+                return `${bars}m`;
+            } else {
+                // Fraction of a bar per step
+                const note = Math.round(fraction);
+                return `${note}n`;
+            }
+        }
 
         function getMacroMappedParams(layerState) {
             const m = layerState.macros;
@@ -1013,7 +1073,8 @@
             const tensionAttackMult = lerp(0.5, 3.0, m.tension);
             const tensionTransient = lerp(0.5, 4.0, m.tension);
             
-            const envAttack = 0.001 * tensionAttackMult;
+            // Attack controlled by user parameter with tension modulation
+            const envAttack = lerp(0.001, 0.2, v.attack) * tensionAttackMult;
             const envDecay = expMap(0.005, 2.0, effectiveShape * (1 + m.decay * 1.5));
             const envSustain = smoothstep(0.3, 1, effectiveShape * m.melodicize) * 0.7;
             const envRelease = envDecay * lerp(0.3, 2.0, m.decay);
@@ -1186,27 +1247,56 @@
             
             Tone.Transport.bpm.value = globalState.tempo;
             
-            // Main loop - triggers all 3 layers
-            loop = new Tone.Loop((time) => {
-                try {
-                    // Process each layer
-                    globalState.layers.forEach((layer, layerIndex) => {
-                        const step = layer.pattern[globalState.currentStep];
+            // Create 3 independent loops, one per layer
+            globalState.layers.forEach((layer, layerIndex) => {
+                const layerLoop = new Tone.Loop((time) => {
+                    try {
+                        const step = layer.pattern[layer.currentStep];
                         const currentMacros = getCurrentMacros(layer);
                         
-                        const shouldTrigger = step.t || (Math.random() < currentMacros.density * 0.5);
+                        let shouldTrigger = false;
+                        
+                        // Density at 0.5 (12 o'clock) = baseline
+                        // Below 0.5: thins out programmed steps
+                        // Above 0.5: adds generative fills to unprogrammed steps
+                        
+                        if (step.t) {
+                            // Programmed step
+                            if (currentMacros.density >= 0.5) {
+                                // Above 50%: always fire programmed steps
+                                shouldTrigger = true;
+                            } else {
+                                // Below 50%: probability scales from 0% at density=0 to 100% at density=0.5
+                                const probability = currentMacros.density / 0.5;
+                                shouldTrigger = Math.random() < probability;
+                            }
+                        } else {
+                            // Unprogrammed step
+                            if (currentMacros.density > 0.5) {
+                                // Above 50%: chance of generative fill
+                                // Scales from 0% at density=0.5 to 100% at density=1.0
+                                const fillProbability = (currentMacros.density - 0.5) / 0.5;
+                                shouldTrigger = Math.random() < fillProbability;
+                            }
+                        }
                         
                         if (shouldTrigger) {
                             triggerNote(layerIndex, step, currentMacros, layer, time);
                         }
-                    });
-                    
-                    requestAnimationFrame(updateUI);
-                    globalState.currentStep = (globalState.currentStep + 1) % globalState.length;
-                } catch (error) {
-                    console.error('Loop error:', error);
-                }
-            }, '16n');
+                        
+                        // Only update UI for currently visible layer
+                        if (layerIndex === globalState.currentLayer) {
+                            requestAnimationFrame(updateUI);
+                        }
+                        
+                        layer.currentStep = (layer.currentStep + 1) % layer.length;
+                    } catch (error) {
+                        console.error(`Layer ${layerIndex} loop error:`, error);
+                    }
+                }, getLoopInterval(layer.clockDivision, layer.length));
+                
+                loops.push(layerLoop);
+            });
             
             initialized = true;
         }
@@ -1348,13 +1438,13 @@
             
             // Update sequencer
             document.querySelectorAll('.step').forEach((el, i) => {
-                if (i >= globalState.length) {
+                if (i >= layer.length) {
                     el.parentElement.style.display = 'none';
                     return;
                 }
                 el.parentElement.style.display = 'flex';
                 el.classList.toggle('active', layer.pattern[i].t === 1);
-                el.classList.toggle('current', i === globalState.currentStep && globalState.playing);
+                el.classList.toggle('current', i === layer.currentStep && globalState.playing);
                 el.classList.toggle('accent', layer.pattern[i].acc === 1);
                 
                 const note = layer.pattern[i].note;
@@ -1373,7 +1463,7 @@
             
             // Update note sliders
             document.querySelectorAll('.note-slider').forEach((slider, i) => {
-                if (i >= globalState.length) return;
+                if (i >= layer.length) return;
                 slider.value = layer.pattern[i].note;
                 
                 const label = slider.nextElementSibling;
@@ -1402,7 +1492,8 @@
             const layer = getCurrentLayer();
             
             document.getElementById('tempoInput').value = globalState.tempo;
-            document.getElementById('lengthSelect').value = globalState.length;
+            document.getElementById('lengthSelect').value = layer.length;
+            document.getElementById('clockDivSelect').value = layer.clockDivision;
             document.getElementById('rootSelect').value = globalState.root;
             document.getElementById('scaleSelect').value = globalState.scale;
             document.getElementById('octaveSelect').value = layer.octaveRange;
@@ -1414,6 +1505,7 @@
             
             updateSlider('driveSlider', 'driveFill', layer.voice.drive * 100);
             updateSlider('tuneSlider', 'tuneFill', layer.voice.tune * 100);
+            updateSlider('attackSlider', 'attackFill', layer.voice.attack * 100);
             updateSlider('ratio1Slider', 'ratio1Fill', layer.voice.ratio1 * 100);
             updateSlider('ratio2Slider', 'ratio2Fill', layer.voice.ratio2 * 100);
             updateSlider('fmIndexSlider', 'fmIndexFill', layer.voice.fmIndex * 100);
@@ -1476,28 +1568,47 @@
                 
                 const step = document.createElement('div');
                 step.className = 'step';
+                step.dataset.index = i;
                 
-                let pressTimer;
+                // Better touch handling for mobile
+                let touchStartTime = 0;
+                let touchMoved = false;
+                
                 step.addEventListener('touchstart', (e) => {
-                    pressTimer = setTimeout(() => {
-                        const layer = getCurrentLayer();
-                        layer.pattern[i].acc = 1 - layer.pattern[i].acc;
-                        updateUI();
-                        navigator.vibrate && navigator.vibrate(50);
-                    }, 400);
+                    touchStartTime = Date.now();
+                    touchMoved = false;
                     e.preventDefault();
-                });
+                }, { passive: false });
+                
+                step.addEventListener('touchmove', (e) => {
+                    touchMoved = true;
+                }, { passive: false });
                 
                 step.addEventListener('touchend', (e) => {
-                    clearTimeout(pressTimer);
                     e.preventDefault();
-                });
+                    
+                    if (touchMoved) return;
+                    
+                    const touchDuration = Date.now() - touchStartTime;
+                    const layer = getCurrentLayer();
+                    
+                    if (touchDuration > 400) {
+                        // Long press - toggle accent
+                        layer.pattern[i].acc = 1 - layer.pattern[i].acc;
+                        navigator.vibrate && navigator.vibrate(50);
+                    } else {
+                        // Short press - toggle step
+                        layer.pattern[i].t = 1 - layer.pattern[i].t;
+                    }
+                    
+                    updateUI();
+                }, { passive: false });
                 
-                step.addEventListener('touchcancel', () => {
-                    clearTimeout(pressTimer);
-                });
-                
+                // Desktop click handler
                 step.onclick = (e) => {
+                    // Ignore if this was triggered by touch
+                    if (e.detail === 0) return;
+                    
                     const layer = getCurrentLayer();
                     if (e.shiftKey) {
                         layer.pattern[i].acc = 1 - layer.pattern[i].acc;
@@ -1672,15 +1783,21 @@
             
             if (globalState.playing) {
                 Tone.Transport.stop();
-                loop.stop();
+                loops.forEach(loop => loop.stop());
                 globalState.playing = false;
                 this.classList.remove('playing');
                 this.textContent = '▶';
-                globalState.currentStep = 0;
+                // Reset all layer steps
+                globalState.layers.forEach(layer => {
+                    layer.currentStep = 0;
+                });
             } else {
-                globalState.currentStep = 0;
+                // Reset all layer steps
+                globalState.layers.forEach(layer => {
+                    layer.currentStep = 0;
+                });
                 Tone.Transport.position = 0;
-                loop.start(0);
+                loops.forEach(loop => loop.start(0));
                 Tone.Transport.start();
                 globalState.playing = true;
                 this.classList.add('playing');
@@ -1701,17 +1818,59 @@
         };
 
         document.getElementById('lengthSelect').onchange = function() {
+            const layer = getCurrentLayer();
+            const layerIndex = globalState.currentLayer;
             const wasPlaying = globalState.playing;
-            if (wasPlaying) {
-                document.getElementById('playBtn').click();
+            
+            layer.length = parseInt(this.value);
+            layer.currentStep = 0;
+            
+            // If playing, restart all loops to keep everything in sync
+            if (wasPlaying && initialized) {
+                // Stop transport
+                Tone.Transport.stop();
+                loops.forEach(loop => loop.stop());
+                
+                // Update the changed layer's interval
+                loops[layerIndex].interval = getLoopInterval(layer.clockDivision, layer.length);
+                
+                // Reset all positions
+                globalState.layers.forEach(l => l.currentStep = 0);
+                Tone.Transport.position = 0;
+                
+                // Restart all loops together
+                loops.forEach(loop => loop.start(0));
+                Tone.Transport.start();
             }
             
-            globalState.length = parseInt(this.value);
-            globalState.currentStep = 0;
             updateUI();
+        };
+
+        document.getElementById('clockDivSelect').onchange = function() {
+            const layer = getCurrentLayer();
+            const layerIndex = globalState.currentLayer;
+            const wasPlaying = globalState.playing;
             
-            if (wasPlaying) {
-                setTimeout(() => document.getElementById('playBtn').click(), 100);
+            layer.clockDivision = this.value;
+            
+            // If playing, restart all loops to keep everything in sync
+            if (wasPlaying && initialized) {
+                // Stop transport
+                Tone.Transport.stop();
+                loops.forEach(loop => loop.stop());
+                
+                // Update the changed layer's interval
+                loops[layerIndex].interval = getLoopInterval(layer.clockDivision, layer.length);
+                
+                // Reset all positions
+                globalState.layers.forEach(l => l.currentStep = 0);
+                Tone.Transport.position = 0;
+                
+                // Restart all loops together
+                loops.forEach(loop => loop.start(0));
+                Tone.Transport.start();
+                
+                updateUI();
             }
         };
 
@@ -1758,7 +1917,7 @@
             
             const mutateSteps = Math.floor(Math.random() * 3) + 1;
             for (let i = 0; i < mutateSteps; i++) {
-                const idx = Math.floor(Math.random() * globalState.length);
+                const idx = Math.floor(Math.random() * layer.length);
                 if (Math.random() < 0.5) {
                     layer.pattern[idx].t = 1 - layer.pattern[idx].t;
                 } else if (Math.random() < 0.5) {
@@ -1785,6 +1944,12 @@
             const layer = getCurrentLayer();
             layer.voice.tune = this.value / 100;
             document.getElementById('tuneFill').style.width = this.value + '%';
+        };
+
+        document.getElementById('attackSlider').oninput = function() {
+            const layer = getCurrentLayer();
+            layer.voice.attack = this.value / 100;
+            document.getElementById('attackFill').style.width = this.value + '%';
         };
 
         document.getElementById('ratio1Slider').oninput = function() {
