@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Percaloid Engine v2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Percaloid Engine v2 - 3 Layer</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -17,23 +18,71 @@
             color: #e0e0e0;
             overflow-x: hidden;
             min-height: 100vh;
+            touch-action: manipulation;
         }
 
         .container {
-            display: grid;
-            grid-template-rows: auto 1fr auto auto;
+            display: flex;
+            flex-direction: column;
             min-height: 100vh;
-            padding: 12px;
-            gap: 12px;
+            padding: 8px;
+            gap: 8px;
             max-width: 1800px;
             margin: 0 auto;
         }
 
+        /* ============= LAYER SELECTOR ============= */
+        .layer-selector {
+            display: flex;
+            gap: 8px;
+            background: rgba(20, 25, 35, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(109, 217, 219, 0.2);
+            padding: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .layer-tab {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(109, 217, 219, 0.3);
+            border-radius: 4px;
+            color: #6dd9db;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .layer-tab:active {
+            transform: scale(0.95);
+        }
+
+        .layer-tab.active {
+            background: #6dd9db;
+            color: #0a0e14;
+            border-color: #6dd9db;
+            box-shadow: 0 0 20px rgba(109, 217, 219, 0.5);
+        }
+
+        .layer-tab.layer1 { border-color: rgba(109, 217, 219, 0.5); }
+        .layer-tab.layer2 { border-color: rgba(255, 159, 64, 0.5); }
+        .layer-tab.layer3 { border-color: rgba(138, 80, 255, 0.5); }
+
+        .layer-tab.layer1.active { background: #6dd9db; }
+        .layer-tab.layer2.active { background: #ff9f40; }
+        .layer-tab.layer3.active { background: #8a50ff; }
+
+        /* ============= TOP BAR ============= */
         .top-bar {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             align-items: center;
-            padding: 12px 16px;
+            padding: 10px 12px;
             background: rgba(20, 25, 35, 0.8);
             border-radius: 6px;
             border: 1px solid rgba(109, 217, 219, 0.2);
@@ -41,17 +90,51 @@
             flex-wrap: wrap;
         }
 
+        .transport {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .play-btn {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 50%;
+            background: rgba(109, 217, 219, 0.15);
+            border: 3px solid rgba(109, 217, 219, 0.4);
+            color: #6dd9db;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+
+        .play-btn.playing {
+            background: #6dd9db;
+            color: #0a0e14;
+            border-color: #6dd9db;
+            box-shadow: 0 0 20px rgba(109, 217, 219, 0.5);
+        }
+
         .control-group {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            min-width: 80px;
+            gap: 3px;
+            min-width: 70px;
         }
 
         .control-label {
-            font-size: 9px;
+            font-size: 8px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             color: #6dd9db;
             font-weight: 600;
         }
@@ -60,48 +143,38 @@
             background: rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(109, 217, 219, 0.4);
             border-radius: 3px;
-            padding: 6px 10px;
+            padding: 6px 8px;
             color: #e0e0e0;
-            font-size: 12px;
+            font-size: 11px;
             font-family: inherit;
             cursor: pointer;
             outline: none;
             transition: all 0.2s;
         }
 
-        .select-input:hover, .number-input:hover {
-            border-color: rgba(109, 217, 219, 0.6);
-            background: rgba(0, 0, 0, 0.8);
-        }
-
         .number-input {
-            width: 70px;
+            width: 60px;
         }
 
         .btn {
             background: rgba(109, 217, 219, 0.12);
             border: 1px solid rgba(109, 217, 219, 0.3);
             border-radius: 3px;
-            padding: 8px 16px;
+            padding: 8px 12px;
             color: #6dd9db;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             outline: none;
             font-family: inherit;
-        }
-
-        .btn:hover {
-            background: rgba(109, 217, 219, 0.25);
-            border-color: rgba(109, 217, 219, 0.5);
-            transform: translateY(-1px);
+            min-height: 36px;
         }
 
         .btn:active {
-            transform: translateY(0);
+            transform: scale(0.95);
         }
 
         .btn.active {
@@ -110,48 +183,41 @@
             border-color: #6dd9db;
         }
 
-        .main-content {
-            display: grid;
-            grid-template-columns: 220px 1fr 220px;
-            gap: 12px;
-            overflow: hidden;
-        }
-
-        .macros-panel, .grid-panel, .voice-panel {
+        /* ============= MACROS PANEL ============= */
+        .macros-panel {
             background: rgba(20, 25, 35, 0.8);
             border-radius: 6px;
             border: 1px solid rgba(109, 217, 219, 0.2);
-            padding: 16px;
+            padding: 12px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
-        .macros-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            overflow-y: auto;
-            max-height: calc(100vh - 300px);
+        .macros-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 8px;
         }
 
         .macro-control {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            align-items: center;
+            gap: 6px;
         }
 
         .macro-label {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 600;
             color: #6dd9db;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
         .knob-container {
             position: relative;
-            width: 60px;
-            height: 60px;
-            margin: 0 auto;
+            width: 50px;
+            height: 50px;
         }
 
         .knob {
@@ -161,22 +227,19 @@
             background: radial-gradient(circle at 35% 35%, rgba(109, 217, 219, 0.15), rgba(0, 0, 0, 0.8));
             border: 3px solid rgba(109, 217, 219, 0.3);
             position: relative;
-            cursor: ns-resize;
+            cursor: pointer;
+            touch-action: none;
             transition: border-color 0.2s;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .knob:hover {
-            border-color: rgba(109, 217, 219, 0.6);
         }
 
         .knob::after {
             content: '';
             position: absolute;
-            width: 4px;
-            height: 20px;
+            width: 3px;
+            height: 16px;
             background: linear-gradient(180deg, #6dd9db, rgba(109, 217, 219, 0.6));
-            top: 8px;
+            top: 6px;
             left: 50%;
             transform: translateX(-50%);
             border-radius: 2px;
@@ -186,40 +249,42 @@
 
         .knob-value {
             position: absolute;
-            bottom: -20px;
+            bottom: -18px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 10px;
+            font-size: 9px;
             color: #808080;
             font-weight: 600;
         }
 
-        .grid-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: center;
-            justify-content: flex-start;
+        /* ============= SEQUENCER ============= */
+        .sequencer-section {
+            background: rgba(20, 25, 35, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(109, 217, 219, 0.2);
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
         .sequencer-grid {
             display: grid;
-            grid-template-columns: repeat(16, 40px);
+            grid-template-columns: repeat(8, 1fr);
             gap: 4px;
-            justify-content: center;
-            padding: 10px;
+            margin-top: 8px;
         }
 
         .step-container {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
             align-items: center;
         }
 
         .step {
-            width: 40px;
-            height: 40px;
+            width: 100%;
+            aspect-ratio: 1;
+            min-width: 36px;
+            min-height: 36px;
             background: rgba(0, 0, 0, 0.6);
             border: 2px solid rgba(109, 217, 219, 0.25);
             border-radius: 3px;
@@ -230,24 +295,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 9px;
+            font-size: 8px;
             color: #6dd9db;
-        }
-
-        .step:hover {
-            border-color: rgba(109, 217, 219, 0.6);
-            background: rgba(109, 217, 219, 0.15);
-            transform: scale(1.05);
+            touch-action: manipulation;
         }
 
         .step:active {
-            transform: scale(0.95);
+            transform: scale(0.9);
         }
 
         .step.active {
             background: linear-gradient(135deg, #6dd9db, #5ac5c7);
             border-color: #6dd9db;
-            box-shadow: 0 0 15px rgba(109, 217, 219, 0.6);
+            box-shadow: 0 0 12px rgba(109, 217, 219, 0.6);
             color: #0a0e14;
         }
 
@@ -259,24 +319,24 @@
 
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.08); }
         }
 
         .step.accent::before {
             content: '';
             position: absolute;
-            top: 3px;
-            right: 3px;
-            width: 7px;
-            height: 7px;
+            top: 2px;
+            right: 2px;
+            width: 6px;
+            height: 6px;
             background: #ff9f40;
             border-radius: 50%;
             box-shadow: 0 0 4px rgba(255, 159, 64, 0.6);
         }
 
         .note-slider {
-            width: 40px;
-            height: 80px;
+            width: 100%;
+            height: 60px;
             writing-mode: bt-lr;
             -webkit-appearance: slider-vertical;
             appearance: slider-vertical;
@@ -285,49 +345,54 @@
             outline: none;
             cursor: ns-resize;
             opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-
-        .note-slider:hover {
-            opacity: 1;
         }
 
         .note-label {
-            font-size: 8px;
+            font-size: 7px;
             color: #6dd9db;
             text-align: center;
-            height: 16px;
-            line-height: 16px;
+            height: 14px;
+            line-height: 14px;
         }
 
+        /* ============= VOICE PANEL ============= */
         .voice-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            background: rgba(20, 25, 35, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(109, 217, 219, 0.2);
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .voice-controls {
+            display: grid;
+            gap: 10px;
+            margin-top: 8px;
         }
 
         .voice-control {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
         }
 
         .mode-selector {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin-top: 4px;
         }
 
         .mode-btn {
-            padding: 8px 6px;
-            font-size: 9px;
+            padding: 8px 4px;
+            font-size: 8px;
         }
 
         .slider-container {
             position: relative;
-            height: 10px;
+            height: 12px;
             background: rgba(0, 0, 0, 0.6);
-            border-radius: 5px;
+            border-radius: 6px;
             overflow: hidden;
             border: 1px solid rgba(109, 217, 219, 0.2);
         }
@@ -335,7 +400,7 @@
         .slider-fill {
             height: 100%;
             background: linear-gradient(90deg, rgba(109, 217, 219, 0.7), #6dd9db);
-            border-radius: 5px;
+            border-radius: 6px;
             transition: width 0.1s;
             pointer-events: none;
             box-shadow: 0 0 8px rgba(109, 217, 219, 0.4);
@@ -351,126 +416,206 @@
             cursor: pointer;
         }
 
+        /* ============= SCENE CONTROLS ============= */
         .scene-controls {
             background: rgba(20, 25, 35, 0.8);
             border-radius: 6px;
             border: 1px solid rgba(109, 217, 219, 0.2);
-            padding: 12px 16px;
+            padding: 10px;
             display: flex;
-            gap: 16px;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .scene-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
 
         .scene-btns {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
         .scene-btn {
-            width: 60px;
-            padding: 10px;
+            flex: 1;
+            padding: 10px 8px;
+            min-width: 70px;
         }
 
         .morph-control {
             flex: 1;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
 
         .morph-label {
-            font-size: 10px;
+            font-size: 9px;
             color: #6dd9db;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+            min-width: 12px;
         }
 
+        /* ============= FX FOOTER ============= */
         .fx-footer {
             background: rgba(20, 25, 35, 0.8);
             border-radius: 6px;
             border: 1px solid rgba(109, 217, 219, 0.2);
-            padding: 12px 16px;
+            padding: 12px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
         .fx-control {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            gap: 5px;
         }
 
         .fx-label {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 600;
             color: #6dd9db;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            min-width: 70px;
-        }
-
-        .transport {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .play-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: rgba(109, 217, 219, 0.15);
-            border: 3px solid rgba(109, 217, 219, 0.4);
-            color: #6dd9db;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .play-btn:hover {
-            background: rgba(109, 217, 219, 0.25);
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(109, 217, 219, 0.2);
-        }
-
-        .play-btn:active {
-            transform: scale(0.95);
-        }
-
-        .play-btn.playing {
-            background: #6dd9db;
-            color: #0a0e14;
-            border-color: #6dd9db;
-            box-shadow: 0 0 20px rgba(109, 217, 219, 0.5);
+            letter-spacing: 0.5px;
         }
 
         h3 {
             text-align: center;
             color: #6dd9db;
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 8px;
+            letter-spacing: 1px;
             font-weight: 600;
         }
 
         .hint {
             text-align: center;
             color: #606060;
-            font-size: 9px;
-            padding-top: 8px;
-            letter-spacing: 0.5px;
+            font-size: 8px;
+            padding-top: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(109, 217, 219, 0.2);
+            margin: 8px 0;
+        }
+
+        /* ============= DESKTOP LAYOUT ============= */
+        @media (min-width: 768px) {
+            .container {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .top-bar {
+                padding: 12px 16px;
+                gap: 16px;
+            }
+
+            .play-btn {
+                width: 52px;
+                height: 52px;
+            }
+
+            .control-group {
+                min-width: 80px;
+            }
+
+            .control-label {
+                font-size: 9px;
+            }
+
+            .btn {
+                padding: 8px 16px;
+                font-size: 10px;
+            }
+
+            .macros-panel {
+                padding: 16px;
+            }
+
+            .macros-grid {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 16px;
+            }
+
+            .knob-container {
+                width: 60px;
+                height: 60px;
+            }
+
+            .knob::after {
+                width: 4px;
+                height: 20px;
+                top: 8px;
+            }
+
+            .macro-label {
+                font-size: 9px;
+            }
+
+            .sequencer-section {
+                padding: 16px;
+            }
+
+            .sequencer-grid {
+                grid-template-columns: repeat(16, 1fr);
+                gap: 6px;
+            }
+
+            .step {
+                min-width: 40px;
+                min-height: 40px;
+                font-size: 9px;
+            }
+
+            .note-slider {
+                height: 80px;
+            }
+
+            .note-label {
+                font-size: 8px;
+            }
+
+            .voice-panel {
+                padding: 16px;
+            }
+
+            .voice-controls {
+                gap: 12px;
+            }
+
+            .fx-footer {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 16px;
+                padding: 12px 16px;
+            }
+
+            .fx-label {
+                font-size: 9px;
+            }
+
+            h3 {
+                font-size: 11px;
+            }
+
+            .hint {
+                font-size: 9px;
+            }
         }
 
         ::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
 
         ::-webkit-scrollbar-track {
@@ -482,20 +627,18 @@
             background: rgba(109, 217, 219, 0.3);
             border-radius: 3px;
         }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(109, 217, 219, 0.5);
-        }
-
-        .divider {
-            height: 1px;
-            background: rgba(109, 217, 219, 0.2);
-            margin: 12px 0;
-        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- LAYER SELECTOR -->
+        <div class="layer-selector">
+            <button class="layer-tab layer1 active" data-layer="0">Layer 1</button>
+            <button class="layer-tab layer2" data-layer="1">Layer 2</button>
+            <button class="layer-tab layer3" data-layer="2">Layer 3</button>
+        </div>
+
+        <!-- TOP BAR -->
         <div class="top-bar">
             <div class="transport">
                 <button class="play-btn" id="playBtn">▶</button>
@@ -519,11 +662,16 @@
                 <label class="control-label">Root</label>
                 <select class="select-input" id="rootSelect">
                     <option value="C">C</option>
+                    <option value="C#">C#</option>
                     <option value="D" selected>D</option>
+                    <option value="D#">D#</option>
                     <option value="E">E</option>
                     <option value="F">F</option>
+                    <option value="F#">F#</option>
                     <option value="G">G</option>
+                    <option value="G#">G#</option>
                     <option value="A">A</option>
+                    <option value="A#">A#</option>
                     <option value="B">B</option>
                 </select>
             </div>
@@ -539,13 +687,13 @@
                     <option value="mixolydian">Mixolydian</option>
                     <option value="locrian">Locrian</option>
                     <option value="pentatonic">Pentatonic</option>
-                    <option value="harmonic">Harmonic Min</option>
-                    <option value="melodic">Melodic Min</option>
+                    <option value="harmonic">Harmonic</option>
+                    <option value="melodic">Melodic</option>
                 </select>
             </div>
 
             <div class="control-group">
-                <label class="control-label">Octave Range</label>
+                <label class="control-label">Octave</label>
                 <select class="select-input" id="octaveSelect">
                     <option value="1">1-2</option>
                     <option value="2">2-3</option>
@@ -557,102 +705,38 @@
 
             <button class="btn" id="evolveBtn">Evolve</button>
             <button class="btn" id="randomBtn">Random</button>
-            <button class="btn" id="testToneBtn">Test Tone</button>
+            <button class="btn" id="testToneBtn">Test</button>
         </div>
 
-        <div class="main-content">
-            <div class="macros-panel">
-                <h3>Macros</h3>
-                
-                <div class="macro-control">
-                    <label class="macro-label">Shape</label>
-                    <div class="knob-container">
-                        <div class="knob" data-macro="shape"></div>
-                        <span class="knob-value">0.35</span>
-                    </div>
-                </div>
+        <!-- MACROS PANEL -->
+        <div class="macros-panel">
+            <h3>Macros</h3>
+            <div class="macros-grid" id="macrosGrid"></div>
+        </div>
 
-                <div class="macro-control">
-                    <label class="macro-label">Density</label>
-                    <div class="knob-container">
-                        <div class="knob" data-macro="density"></div>
-                        <span class="knob-value">0.20</span>
-                    </div>
-                </div>
-
-                <div class="macro-control">
-                    <label class="macro-label">Entropy</label>
-                    <div class="knob-container">
-                        <div class="knob" data-macro="entropy"></div>
-                        <span class="knob-value">0.15</span>
-                    </div>
-                </div>
-
-                <div class="macro-control">
-                    <label class="macro-label">Contrast</label>
-                    <div class="knob-container">
-                        <div class="knob" data-macro="contrast"></div>
-                        <span class="knob-value">0.60</span>
-                    </div>
-                </div>
-
-                <div class="macro-control">
-                    <label class="macro-label">Melodicize</label>
-                    <div class="knob-container">
-                        <div class="knob" data-macro="melodicize"></div>
-                        <span class="knob-value">0.10</span>
-                    </div>
-                </div>
-
-                <div class="macro-control">
-                    <label class="macro-label">Metallic</label>
-                    <div class="knob-container">
-                        <div class="knob" data-macro="metallic"></div>
-                        <span class="knob-value">0.30</span>
-                    </div>
-                </div>
-
-                <div class="macro-control">
-                    <label class="macro-label">Decay</label>
-                    <div class="knob-container">
-                        <div class="knob" data-macro="decay"></div>
-                        <span class="knob-value">0.40</span>
-                    </div>
-                </div>
-
-                <div class="macro-control">
-                    <label class="macro-label">Spread</label>
-                    <div class="knob-container">
-                        <div class="knob" data-macro="spread"></div>
-                        <span class="knob-value">0.25</span>
-                    </div>
-                </div>
+        <!-- SEQUENCER -->
+        <div class="sequencer-section">
+            <h3>Sequencer</h3>
+            <div class="sequencer-grid" id="sequencerGrid"></div>
+            <div class="hint">
+                Tap step • Long-press for accent • Slider for note
             </div>
+        </div>
 
-            <div class="grid-panel">
-                <div class="sequencer-grid" id="sequencerGrid"></div>
-                <div class="hint">
-                    Click step to toggle • Shift+Click for accent • Slider for note
-                </div>
-            </div>
-
-            <div class="voice-panel">
-                <h3>Voice</h3>
-                
+        <!-- VOICE PANEL -->
+        <div class="voice-panel">
+            <h3>Voice</h3>
+            
+            <div class="voice-controls">
                 <div class="voice-control">
                     <label class="control-label">Mode</label>
-                    <div class="mode-selector">
-                        <button class="btn mode-btn active" data-mode="drum">Drum</button>
-                        <button class="btn mode-btn" data-mode="bass">Bass</button>
-                        <button class="btn mode-btn" data-mode="lead">Lead</button>
-                        <button class="btn mode-btn" data-mode="pad">Pad</button>
-                    </div>
+                    <div class="mode-selector" id="modeSelector"></div>
                 </div>
 
                 <div class="voice-control">
                     <label class="control-label">Drive</label>
                     <div class="slider-container">
-                        <div class="slider-fill" id="driveFill" style="width: 30%"></div>
+                        <div class="slider-fill" id="driveFill"></div>
                         <input type="range" class="slider" id="driveSlider" min="0" max="100" value="30">
                     </div>
                 </div>
@@ -660,7 +744,7 @@
                 <div class="voice-control">
                     <label class="control-label">Tune</label>
                     <div class="slider-container">
-                        <div class="slider-fill" id="tuneFill" style="width: 50%"></div>
+                        <div class="slider-fill" id="tuneFill"></div>
                         <input type="range" class="slider" id="tuneSlider" min="0" max="100" value="50">
                     </div>
                 </div>
@@ -670,7 +754,7 @@
                 <div class="voice-control">
                     <label class="control-label">FM Ratio 1</label>
                     <div class="slider-container">
-                        <div class="slider-fill" id="ratio1Fill" style="width: 50%"></div>
+                        <div class="slider-fill" id="ratio1Fill"></div>
                         <input type="range" class="slider" id="ratio1Slider" min="0" max="100" value="50">
                     </div>
                 </div>
@@ -678,7 +762,7 @@
                 <div class="voice-control">
                     <label class="control-label">FM Ratio 2</label>
                     <div class="slider-container">
-                        <div class="slider-fill" id="ratio2Fill" style="width: 60%"></div>
+                        <div class="slider-fill" id="ratio2Fill"></div>
                         <input type="range" class="slider" id="ratio2Slider" min="0" max="100" value="60">
                     </div>
                 </div>
@@ -686,60 +770,63 @@
                 <div class="voice-control">
                     <label class="control-label">FM Index</label>
                     <div class="slider-container">
-                        <div class="slider-fill" id="fmIndexFill" style="width: 40%"></div>
+                        <div class="slider-fill" id="fmIndexFill"></div>
                         <input type="range" class="slider" id="fmIndexSlider" min="0" max="100" value="40">
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- SCENE CONTROLS -->
         <div class="scene-controls">
-            <div class="scene-btns">
-                <button class="btn scene-btn active" id="sceneABtn">Scene A</button>
-                <button class="btn scene-btn" id="sceneBBtn">Scene B</button>
+            <div class="scene-row">
+                <div class="scene-btns">
+                    <button class="btn scene-btn active" id="sceneABtn">Scene A</button>
+                    <button class="btn scene-btn" id="sceneBBtn">Scene B</button>
+                </div>
+                <button class="btn" id="saveSceneBtn">Save</button>
             </div>
             
             <div class="morph-control">
                 <span class="morph-label">A</span>
                 <div class="slider-container" style="flex: 1;">
-                    <div class="slider-fill" id="morphFill" style="width: 0%"></div>
+                    <div class="slider-fill" id="morphFill"></div>
                     <input type="range" class="slider" id="morphSlider" min="0" max="100" value="0">
                 </div>
                 <span class="morph-label">B</span>
             </div>
-
-            <button class="btn" id="saveSceneBtn">Save Scene</button>
         </div>
 
+        <!-- FX FOOTER -->
         <div class="fx-footer">
             <div class="fx-control">
                 <label class="fx-label">Delay Mix</label>
-                <div class="slider-container" style="flex: 1;">
-                    <div class="slider-fill" id="delayMixFill" style="width: 25%"></div>
+                <div class="slider-container">
+                    <div class="slider-fill" id="delayMixFill"></div>
                     <input type="range" class="slider" id="delayMixSlider" min="0" max="100" value="25">
                 </div>
             </div>
 
             <div class="fx-control">
                 <label class="fx-label">Delay Time</label>
-                <div class="slider-container" style="flex: 1;">
-                    <div class="slider-fill" id="delayTimeFill" style="width: 35%"></div>
+                <div class="slider-container">
+                    <div class="slider-fill" id="delayTimeFill"></div>
                     <input type="range" class="slider" id="delayTimeSlider" min="0" max="100" value="35">
                 </div>
             </div>
 
             <div class="fx-control">
                 <label class="fx-label">Delay FB</label>
-                <div class="slider-container" style="flex: 1;">
-                    <div class="slider-fill" id="delayFbFill" style="width: 40%"></div>
+                <div class="slider-container">
+                    <div class="slider-fill" id="delayFbFill"></div>
                     <input type="range" class="slider" id="delayFbSlider" min="0" max="100" value="40">
                 </div>
             </div>
 
             <div class="fx-control">
                 <label class="fx-label">Reverb Mix</label>
-                <div class="slider-container" style="flex: 1;">
-                    <div class="slider-fill" id="reverbFill" style="width: 18%"></div>
+                <div class="slider-container">
+                    <div class="slider-fill" id="reverbFill"></div>
                     <input type="range" class="slider" id="reverbSlider" min="0" max="100" value="18">
                 </div>
             </div>
@@ -794,76 +881,108 @@
         };
 
         const noteFreqs = {
-            'C': 32.70, 'D': 36.71, 'E': 41.20,
-            'F': 43.65, 'G': 49.00, 'A': 55.00, 'B': 61.74
+            'C': 32.70, 'C#': 34.65, 'D': 36.71, 'D#': 38.89, 'E': 41.20,
+            'F': 43.65, 'F#': 46.25, 'G': 49.00, 'G#': 51.91, 'A': 55.00, 'A#': 58.27, 'B': 61.74
         };
 
+        const macroDefinitions = [
+            { key: 'shape', label: 'Shape', default: 0.35 },
+            { key: 'density', label: 'Density', default: 0.20 },
+            { key: 'entropy', label: 'Entropy', default: 0.15 },
+            { key: 'contrast', label: 'Contrast', default: 0.60 },
+            { key: 'melodicize', label: 'Melodic', default: 0.10 },
+            { key: 'metallic', label: 'Metal', default: 0.30 },
+            { key: 'decay', label: 'Decay', default: 0.40 },
+            { key: 'spread', label: 'Spread', default: 0.25 },
+            { key: 'brightness', label: 'Bright', default: 0.50 },
+            { key: 'harmonics', label: 'Harmonic', default: 0.30 },
+            { key: 'tension', label: 'Tension', default: 0.40 },
+            { key: 'air', label: 'Air', default: 0.20 }
+        ];
+
         // ============================================================================
-        // STATE MANAGEMENT
+        // STATE MANAGEMENT - 3 LAYERS
         // ============================================================================
         
-        const state = {
+        const globalState = {
             tempo: 120,
             length: 16,
             playing: false,
             currentStep: 0,
             root: 'D',
             scale: 'minor',
-            mode: 'drum',
-            octaveRange: 3,
-            currentScene: 'A',
-            morphAmount: 0,
-            macros: {
-                shape: 0.35,
-                density: 0.20,
-                entropy: 0.15,
-                contrast: 0.60,
-                melodicize: 0.10,
-                metallic: 0.30,
-                decay: 0.40,
-                spread: 0.25
-            },
-            voice: {
-                drive: 0.3,
-                tune: 0.5,
-                ratio1: 0.5,
-                ratio2: 0.6,
-                fmIndex: 0.4
-            },
-            fx: {
-                delayMix: 0.25,
-                delayTime: 0.35,
-                delayFb: 0.40,
-                reverb: 0.18
-            },
-            pattern: Array(16).fill(null).map(() => ({ 
-                t: 0, 
-                acc: 0, 
-                note: 0  // 0 = root, -7 to +7 for scale degrees
-            })),
-            scenes: {
-                A: null,
-                B: null
-            }
+            currentLayer: 0,
+            layers: []
         };
 
-        // Initialize with default kick pattern
-        [0, 4, 8, 12].forEach(i => state.pattern[i].t = 1);
+        // Initialize 3 layers
+        function createLayerState(layerIndex) {
+            const defaultModes = ['drum', 'bass', 'lead'];
+            const layer = {
+                mode: defaultModes[layerIndex],
+                octaveRange: 3,
+                currentScene: 'A',
+                morphAmount: 0,
+                macros: {},
+                voice: {
+                    drive: 0.3,
+                    tune: 0.5,
+                    ratio1: 0.5,
+                    ratio2: 0.6,
+                    fmIndex: 0.4
+                },
+                fx: {
+                    delayMix: 0.25,
+                    delayTime: 0.35,
+                    delayFb: 0.40,
+                    reverb: 0.18
+                },
+                pattern: Array(16).fill(null).map(() => ({ 
+                    t: 0, 
+                    acc: 0, 
+                    note: 0
+                })),
+                scenes: {
+                    A: null,
+                    B: null
+                }
+            };
+
+            // Initialize macros
+            macroDefinitions.forEach(macro => {
+                layer.macros[macro.key] = macro.default;
+            });
+
+            // Set default pattern based on layer
+            if (layerIndex === 0) {
+                // Layer 1: Kick pattern
+                [0, 4, 8, 12].forEach(i => layer.pattern[i].t = 1);
+            }
+
+            return layer;
+        }
+
+        globalState.layers = [
+            createLayerState(0),
+            createLayerState(1),
+            createLayerState(2)
+        ];
+
+        function getCurrentLayer() {
+            return globalState.layers[globalState.currentLayer];
+        }
 
         // ============================================================================
-        // AUDIO ENGINE
+        // AUDIO ENGINE - 3 SEPARATE CHAINS
         // ============================================================================
         
-        let carrier, mod1, mod2, noise, noiseEnv;
-        let filter, comb, distortion, reverb, delay;
         let loop, initialized = false;
+        const audioEngines = [];
 
-        // Enhanced macro router with sophisticated FM and morphing
-        function getMacroMappedParams() {
-            const m = state.macros;
-            const v = state.voice;
+        function getMacroMappedParams(layerState) {
+            const m = layerState.macros;
+            const v = layerState.voice;
             
-            // Mode presets influence Shape bias
             const modeShapeBias = {
                 drum: 0.25,
                 bass: 0.45,
@@ -871,51 +990,55 @@
                 pad: 0.85
             };
             
-            const effectiveShape = lerp(m.shape, modeShapeBias[state.mode], 0.3);
+            const effectiveShape = lerp(m.shape, modeShapeBias[layerState.mode], 0.3);
             
-            // SHAPE: Master drum ⇄ tone axis (MORE EXTREME)
-            const noiseMix = Math.pow(1 - smoothstep(0.05, 0.75, effectiveShape), 1.5);
-            const carrierGain = smoothstep(0.1, 0.9, effectiveShape);
+            const noiseMix = Math.pow(1 - smoothstep(0.05, 0.75, effectiveShape), 2.0);
+            const carrierGain = smoothstep(0.05, 0.95, effectiveShape);
             
-            // FM ratios - WIDER RANGE for more dramatic timbral shifts
-            const baseRatio1 = lerp(0.5, 4.0, v.ratio1); // much wider range
-            const baseRatio2 = lerp(0.75, 7.0, v.ratio2); // much wider range
+            const baseRatio1 = lerp(0.25, 8.0, v.ratio1);
+            const baseRatio2 = lerp(0.5, 12.0, v.ratio2);
             
-            // Metallic pushes toward inharmonic sweet spots (MORE EXTREME)
-            const ratio1 = lerp(baseRatio1, 1.618 * (1 + m.metallic), m.metallic * 0.7); 
-            const ratio2 = lerp(baseRatio2, 2.414 * (1 + m.metallic * 1.5), m.metallic * 0.7);
+            const ratio1 = lerp(baseRatio1, 1.618 * (1 + m.metallic * 2), m.metallic * 0.8);
+            const ratio2 = lerp(baseRatio2, 2.414 * (1 + m.metallic * 2.5), m.metallic * 0.8);
             
-            // FM index - MUCH MORE DRAMATIC RANGE
-            const baseIndex = lerp(8, 0.5, effectiveShape); // increased from 4.5 to 8
-            const modIndex = baseIndex * (1 + m.metallic * 3) * v.fmIndex * 3; // increased multipliers
+            const harmonicRatio1Mod = 1 + (m.harmonics * 3.0);
+            const harmonicRatio2Mod = 1 + (m.harmonics * 4.0);
             
-            // Envelope times - WIDER RANGE
-            const envAttack = 0.001;
-            const envDecay = expMap(0.01, 1.2, effectiveShape * (1 + m.decay)); // extended decay range
-            const envSustain = smoothstep(0.4, 1, effectiveShape * m.melodicize) * 0.6; // increased sustain
-            const envRelease = envDecay * lerp(0.5, 1.5, m.decay);
+            const finalRatio1 = ratio1 * harmonicRatio1Mod;
+            const finalRatio2 = ratio2 * harmonicRatio2Mod;
             
-            // Filter - MUCH MORE DRAMATIC SWEEP
-            const filterCutoff = expMap(200, 12000, effectiveShape); // wider range
-            const filterQ = lerp(0.5, 20, m.metallic) * (1 + m.contrast); // much higher Q
+            const baseIndex = lerp(15, 0.3, effectiveShape);
+            const modIndex = baseIndex * (1 + m.metallic * 5) * v.fmIndex * 4;
             
-            // Comb/resonant body contribution (MORE PROMINENT)
-            const combMix = m.metallic * 0.8 * (1 - effectiveShape * 0.3);
-            const combFeedback = lerp(0.5, 0.95, m.metallic);
+            const tensionAttackMult = lerp(0.5, 3.0, m.tension);
+            const tensionTransient = lerp(0.5, 4.0, m.tension);
             
-            // Drive/distortion - MORE EXTREME
-            const driveAmount = lerp(0.2, 8, m.contrast * v.drive); // much higher drive
-            const transientGain = lerp(0.3, 2.5, m.contrast); // bigger transient range
+            const envAttack = 0.001 * tensionAttackMult;
+            const envDecay = expMap(0.005, 2.0, effectiveShape * (1 + m.decay * 1.5));
+            const envSustain = smoothstep(0.3, 1, effectiveShape * m.melodicize) * 0.7;
+            const envRelease = envDecay * lerp(0.3, 2.0, m.decay);
             
-            // Pitch stability (entropy) - MORE EXTREME JITTER
-            const pitchJitter = m.entropy * 50; // doubled
-            const timingJitter = m.entropy * 0.03; // increased
+            const brightnessBoost = lerp(1.0, 8.0, m.brightness);
+            const filterCutoff = expMap(150, 18000, effectiveShape * brightnessBoost);
+            const filterQ = lerp(0.3, 35, m.metallic * m.brightness) * (1 + m.contrast * 2);
+            
+            const combMix = m.metallic * 0.9 * (1 - effectiveShape * 0.2);
+            const combFeedback = lerp(0.5, 0.97, m.metallic);
+            
+            const driveAmount = lerp(0.1, 15, m.contrast * v.drive);
+            const transientGain = lerp(0.2, 4.0, m.contrast * tensionTransient);
+            
+            const airMix = m.air * 0.8;
+            const airCutoff = lerp(4000, 12000, m.air);
+            
+            const pitchJitter = m.entropy * 80;
+            const timingJitter = m.entropy * 0.05;
             
             return {
                 noiseMix,
                 carrierGain,
-                ratio1,
-                ratio2,
+                ratio1: finalRatio1,
+                ratio2: finalRatio2,
                 modIndex,
                 envAttack,
                 envDecay,
@@ -928,7 +1051,11 @@
                 driveAmount,
                 transientGain,
                 pitchJitter,
-                timingJitter
+                timingJitter,
+                airMix,
+                airCutoff,
+                brightnessBoost,
+                tensionTransient
             };
         }
 
@@ -936,276 +1063,276 @@
             if (initialized) return;
             
             await Tone.start();
-            console.log('🎵 Percaloid Engine v2 - Audio Context Started');
+            console.log('🎵 Percaloid Engine v2 - 3 Layer - Audio Started');
             
-            // EFFECTS CHAIN - Simplified, no comb filter
-            
-            // Filter
-            filter = new Tone.Filter({
-                type: 'lowpass',
-                frequency: 3000,
-                Q: 2
-            });
-            
-            // Distortion
-            distortion = new Tone.Distortion({
-                distortion: 0.3,
-                wet: 0.4
-            });
-            
-            // Reverb
-            reverb = new Tone.Reverb({
-                decay: 2.5,
-                wet: 0.18
-            });
-            
-            // Delay
-            delay = new Tone.FeedbackDelay({
-                delayTime: '8n',
-                feedback: 0.4,
-                wet: 0.25
-            });
-            
-            // Master gain
-            const masterGain = new Tone.Gain(1.5);
-            
-            // Build signal chain: distortion -> filter -> master -> delay/reverb -> destination
-            distortion.connect(filter);
-            filter.connect(masterGain);
-            masterGain.toDestination();
-            masterGain.connect(delay);
-            masterGain.connect(reverb);
-            delay.toDestination();
-            reverb.toDestination();
-            
-            console.log('Effects chain created (no comb filter)');
-            
-            // Main FM synth voice
-            const fmSynth = new Tone.FMSynth({
-                volume: 0,
-                harmonicity: 1.5,
-                modulationIndex: 3,
-                envelope: {
+            // Create 3 independent audio engines
+            for (let i = 0; i < 3; i++) {
+                const filter = new Tone.Filter({
+                    type: 'lowpass',
+                    frequency: 3000,
+                    Q: 2
+                });
+                
+                const distortion = new Tone.Distortion({
+                    distortion: 0.3,
+                    wet: 0.4
+                });
+                
+                const reverb = new Tone.Reverb({
+                    decay: 2.5,
+                    wet: 0.18
+                });
+                
+                const delay = new Tone.FeedbackDelay({
+                    delayTime: '8n',
+                    feedback: 0.4,
+                    wet: 0.25
+                });
+                
+                const limiter = new Tone.Limiter(-3);
+                const masterGain = new Tone.Gain(0.5); // Lower gain per layer to prevent clipping
+                
+                distortion.connect(filter);
+                filter.connect(masterGain);
+                masterGain.connect(limiter);
+                limiter.toDestination();
+                masterGain.connect(delay);
+                masterGain.connect(reverb);
+                delay.connect(limiter);
+                reverb.connect(limiter);
+                
+                const fmSynth = new Tone.FMSynth({
+                    volume: 0,
+                    harmonicity: 1.5,
+                    modulationIndex: 3,
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.1,
+                        sustain: 0.0,
+                        release: 0.1
+                    },
+                    modulation: {
+                        type: 'sine'
+                    },
+                    modulationEnvelope: {
+                        attack: 0.001,
+                        decay: 0.2,
+                        sustain: 0,
+                        release: 0.1
+                    }
+                }).connect(distortion);
+                
+                const fmSynth2 = new Tone.FMSynth({
+                    volume: -6,
+                    harmonicity: 2.0,
+                    modulationIndex: 2,
+                    envelope: {
+                        attack: 0.001,
+                        decay: 0.08,
+                        sustain: 0.0,
+                        release: 0.08
+                    },
+                    modulation: {
+                        type: 'sine'
+                    },
+                    modulationEnvelope: {
+                        attack: 0.001,
+                        decay: 0.15,
+                        sustain: 0,
+                        release: 0.08
+                    }
+                }).connect(distortion);
+                
+                const noise = new Tone.Noise('pink').start();
+                const noiseEnv = new Tone.AmplitudeEnvelope({
                     attack: 0.001,
-                    decay: 0.1,
-                    sustain: 0.0,
-                    release: 0.1
-                },
-                modulation: {
-                    type: 'sine'
-                },
-                modulationEnvelope: {
-                    attack: 0.001,
-                    decay: 0.2,
+                    decay: 0.03,
                     sustain: 0,
-                    release: 0.1
-                }
-            }).connect(distortion);
-            
-            // Additional synth for richness
-            const fmSynth2 = new Tone.FMSynth({
-                volume: -6,
-                harmonicity: 2.0,
-                modulationIndex: 2,
-                envelope: {
-                    attack: 0.001,
-                    decay: 0.08,
-                    sustain: 0.0,
-                    release: 0.08
-                },
-                modulation: {
-                    type: 'sine'
-                },
-                modulationEnvelope: {
-                    attack: 0.001,
-                    decay: 0.15,
+                    release: 0.01
+                }).connect(distortion);
+                noise.connect(noiseEnv);
+                
+                const airNoise = new Tone.Noise('white').start();
+                const airFilter = new Tone.Filter({
+                    type: 'highpass',
+                    frequency: 4000,
+                    Q: 1
+                });
+                const airEnv = new Tone.AmplitudeEnvelope({
+                    attack: 0.002,
+                    decay: 0.05,
                     sustain: 0,
-                    release: 0.08
-                }
-            }).connect(distortion);
+                    release: 0.02
+                }).connect(distortion);
+                airNoise.connect(airFilter);
+                airFilter.connect(airEnv);
+                
+                audioEngines.push({
+                    fmSynth,
+                    fmSynth2,
+                    masterGain,
+                    noiseEnv,
+                    noise,
+                    airNoise,
+                    airFilter,
+                    airEnv,
+                    filter,
+                    distortion,
+                    delay,
+                    reverb,
+                    limiter
+                });
+            }
             
-            console.log('FM Synths created and connected to effects');
+            Tone.Transport.bpm.value = globalState.tempo;
             
-            // Noise layer
-            noise = new Tone.Noise('pink').start();
-            noiseEnv = new Tone.AmplitudeEnvelope({
-                attack: 0.001,
-                decay: 0.03,
-                sustain: 0,
-                release: 0.01
-            }).connect(distortion);
-            noise.connect(noiseEnv);
-            
-            console.log('Noise layer created');
-            
-            // Store for access
-            window.audioEngine = {
-                fmSynth,
-                fmSynth2,
-                masterGain,
-                noiseEnv,
-                noise,
-                filter,
-                distortion,
-                delay,
-                reverb
-            };
-            
-            Tone.Transport.bpm.value = state.tempo;
-            
-            // Sequencer loop
+            // Main loop - triggers all 3 layers
             loop = new Tone.Loop((time) => {
                 try {
-                    const step = state.pattern[state.currentStep];
-                    const currentMacros = getCurrentMacros();
-                    
-                    // Density affects probability of triggering even when step is "off"
-                    const shouldTrigger = step.t || (Math.random() < currentMacros.density * 0.5);
-                    
-                    if (shouldTrigger) {
-                        const params = getMacroMappedParams();
+                    // Process each layer
+                    globalState.layers.forEach((layer, layerIndex) => {
+                        const step = layer.pattern[globalState.currentStep];
+                        const currentMacros = getCurrentMacros(layer);
                         
-                        // Calculate pitch from scale + per-step note offset
-                        const rootFreq = noteFreqs[state.root];
-                        const scaleNotes = scales[state.scale];
-                        const octave = state.octaveRange;
+                        const shouldTrigger = step.t || (Math.random() < currentMacros.density * 0.5);
                         
-                        const scaleDegree = Math.abs(step.note) % scaleNotes.length;
-                        const octaveOffset = Math.floor(step.note / scaleNotes.length);
-                        const semitone = scaleNotes[scaleDegree];
-                        
-                        let freq = rootFreq * Math.pow(2, (semitone + (octave + octaveOffset) * 12) / 12);
-                        
-                        // Shape influences base pitch
-                        const shapePitchBias = lerp(0.7, 1.0, currentMacros.shape);
-                        freq *= shapePitchBias;
-                        
-                        // Apply entropy jitter
-                        const jitter = gauss(0, params.pitchJitter);
-                        freq *= Math.pow(2, jitter / 1200);
-                        
-                        // Apply tune offset
-                        freq *= Math.pow(2, (state.voice.tune - 0.5) * 24 / 12);
-                        
-                        // Spread: alternate pan/pitch
-                        const spreadAmount = currentMacros.spread;
-                        const stepParity = state.currentStep % 2;
-                        const spreadCents = stepParity ? spreadAmount * 20 : -spreadAmount * 20; // increased spread
-                        freq *= Math.pow(2, spreadCents / 1200);
-                        
-                        // Velocity from accent
-                        const vel = step.acc ? 1.0 : 0.7;
-                        
-                        const engine = window.audioEngine;
-                        
-                        if (!engine) {
-                            console.error('❌ Audio engine not found!');
-                            return;
+                        if (shouldTrigger) {
+                            triggerNote(layerIndex, step, currentMacros, layer, time);
                         }
-                        
-                        // Apply macro-mapped parameters to synths
-                        const finalRatio1 = params.ratio1 * lerp(0.5, 2.0, state.voice.ratio1);
-                        const finalRatio2 = params.ratio2 * lerp(0.5, 2.0, state.voice.ratio2);
-                        const finalModIndex = params.modIndex * lerp(0.3, 3.0, state.voice.fmIndex);
-                        
-                        // Update FM parameters
-                        engine.fmSynth.harmonicity.value = finalRatio1;
-                        engine.fmSynth.modulationIndex.value = finalModIndex;
-                        engine.fmSynth.envelope.attack = params.envAttack;
-                        engine.fmSynth.envelope.decay = params.envDecay;
-                        engine.fmSynth.envelope.sustain = params.envSustain;
-                        engine.fmSynth.envelope.release = params.envRelease;
-                        
-                        engine.fmSynth2.harmonicity.value = finalRatio2;
-                        engine.fmSynth2.modulationIndex.value = finalModIndex * 0.7;
-                        engine.fmSynth2.envelope.attack = params.envAttack;
-                        engine.fmSynth2.envelope.decay = params.envDecay * 0.8;
-                        engine.fmSynth2.envelope.sustain = params.envSustain;
-                        engine.fmSynth2.envelope.release = params.envRelease;
-                        
-                        // Update filter (shape affects cutoff)
-                        engine.filter.frequency.value = params.filterCutoff;
-                        engine.filter.Q.value = params.filterQ;
-                        
-                        // Update distortion (contrast/drive)
-                        const finalDrive = params.driveAmount * lerp(0.1, 1.5, state.voice.drive);
-                        engine.distortion.distortion = clamp(finalDrive * 0.4, 0, 0.98);
-                        engine.distortion.wet.value = clamp(finalDrive * 0.5, 0, 1);
-                        
-                        // Update effects
-                        engine.reverb.wet.value = state.fx.reverb * (1 + currentMacros.melodicize * 0.8);
-                        engine.delay.wet.value = state.fx.delayMix;
-                        
-                        const duration = params.envDecay * 3;
-                        const noteName = Tone.Frequency(freq, "hz").toNote();
-                        
-                        // Trigger synths with velocity
-                        const synthVel = vel * params.carrierGain;
-                        
-                        engine.fmSynth.triggerAttackRelease(noteName, duration, time, synthVel);
-                        
-                        // Second synth for richness
-                        if (currentMacros.shape > 0.3) {
-                            engine.fmSynth2.triggerAttackRelease(noteName, duration * 0.8, time, synthVel * 0.5);
-                        }
-                        
-                        // Noise layer
-                        if (params.noiseMix > 0.1) {
-                            engine.noiseEnv.triggerAttackRelease(
-                                params.envDecay * 0.4,
-                                time,
-                                vel * params.noiseMix * params.transientGain
-                            );
-                        }
-                    }
+                    });
                     
                     requestAnimationFrame(updateUI);
-                    state.currentStep = (state.currentStep + 1) % state.length;
+                    globalState.currentStep = (globalState.currentStep + 1) % globalState.length;
                 } catch (error) {
-                    console.error('Loop error:', error.message);
+                    console.error('Loop error:', error);
                 }
             }, '16n');
             
-            console.log('✅ Loop created');
-            
             initialized = true;
-            console.log('✅ Audio engine fully initialized with complete parameter routing');
+        }
+
+        function triggerNote(layerIndex, step, currentMacros, layerState, time) {
+            const params = getMacroMappedParams(layerState);
+            
+            const rootFreq = noteFreqs[globalState.root];
+            const scaleNotes = scales[globalState.scale];
+            const octave = layerState.octaveRange;
+            
+            const scaleDegree = Math.abs(step.note) % scaleNotes.length;
+            const octaveOffset = Math.floor(step.note / scaleNotes.length);
+            const semitone = scaleNotes[scaleDegree];
+            
+            let freq = rootFreq * Math.pow(2, (semitone + (octave + octaveOffset) * 12) / 12);
+            
+            const shapePitchBias = lerp(0.7, 1.0, currentMacros.shape);
+            freq *= shapePitchBias;
+            
+            const jitter = gauss(0, params.pitchJitter);
+            freq *= Math.pow(2, jitter / 1200);
+            
+            freq *= Math.pow(2, (layerState.voice.tune - 0.5) * 24 / 12);
+            
+            const spreadAmount = currentMacros.spread;
+            const stepParity = globalState.currentStep % 2;
+            const spreadCents = stepParity ? spreadAmount * 20 : -spreadAmount * 20;
+            freq *= Math.pow(2, spreadCents / 1200);
+            
+            const vel = step.acc ? 1.0 : 0.7;
+            
+            const engine = audioEngines[layerIndex];
+            
+            if (!engine) return;
+            
+            const finalRatio1 = params.ratio1 * lerp(0.5, 2.0, layerState.voice.ratio1);
+            const finalRatio2 = params.ratio2 * lerp(0.5, 2.0, layerState.voice.ratio2);
+            const finalModIndex = params.modIndex * lerp(0.3, 3.0, layerState.voice.fmIndex);
+            
+            engine.fmSynth.harmonicity.value = finalRatio1;
+            engine.fmSynth.modulationIndex.value = finalModIndex;
+            engine.fmSynth.envelope.attack = params.envAttack;
+            engine.fmSynth.envelope.decay = params.envDecay;
+            engine.fmSynth.envelope.sustain = params.envSustain;
+            engine.fmSynth.envelope.release = params.envRelease;
+            
+            engine.fmSynth2.harmonicity.value = finalRatio2;
+            engine.fmSynth2.modulationIndex.value = finalModIndex * 0.7;
+            engine.fmSynth2.envelope.attack = params.envAttack;
+            engine.fmSynth2.envelope.decay = params.envDecay * 0.8;
+            engine.fmSynth2.envelope.sustain = params.envSustain;
+            engine.fmSynth2.envelope.release = params.envRelease;
+            
+            engine.filter.frequency.value = params.filterCutoff;
+            engine.filter.Q.value = params.filterQ;
+            
+            engine.airFilter.frequency.value = params.airCutoff;
+            
+            const finalDrive = params.driveAmount * lerp(0.1, 1.5, layerState.voice.drive);
+            engine.distortion.distortion = clamp(finalDrive * 0.4, 0, 0.98);
+            engine.distortion.wet.value = clamp(finalDrive * 0.5, 0, 1);
+            
+            engine.reverb.wet.value = layerState.fx.reverb * (1 + currentMacros.melodicize * 0.8);
+            engine.delay.wet.value = layerState.fx.delayMix;
+            
+            const duration = params.envDecay * 3;
+            const noteName = Tone.Frequency(freq, "hz").toNote();
+            
+            const synthVel = vel * params.carrierGain;
+            
+            engine.fmSynth.triggerAttackRelease(noteName, duration, time, synthVel);
+            
+            if (currentMacros.shape > 0.3) {
+                engine.fmSynth2.triggerAttackRelease(noteName, duration * 0.8, time, synthVel * 0.5);
+            }
+            
+            if (params.noiseMix > 0.1) {
+                engine.noiseEnv.triggerAttackRelease(
+                    params.envDecay * 0.4,
+                    time,
+                    vel * params.noiseMix * params.transientGain
+                );
+            }
+            
+            if (params.airMix > 0.1) {
+                engine.airEnv.triggerAttackRelease(
+                    params.envDecay * 0.5,
+                    time,
+                    vel * params.airMix * 0.6
+                );
+            }
         }
 
         // ============================================================================
         // SCENE SYSTEM
         // ============================================================================
         
-        function saveCurrentScene() {
+        function saveCurrentScene(layer) {
             return {
-                macros: {...state.macros},
-                voice: {...state.voice},
-                pattern: state.pattern.map(s => ({...s})),
-                fx: {...state.fx}
+                macros: {...layer.macros},
+                voice: {...layer.voice},
+                pattern: layer.pattern.map(s => ({...s})),
+                fx: {...layer.fx}
             };
         }
 
-        function loadScene(sceneData) {
-            state.macros = {...sceneData.macros};
-            state.voice = {...sceneData.voice};
-            state.pattern = sceneData.pattern.map(s => ({...s}));
-            state.fx = {...sceneData.fx};
-            updateAllControls();
-            updateUI();
+        function loadScene(layer, sceneData) {
+            layer.macros = {...sceneData.macros};
+            layer.voice = {...sceneData.voice};
+            layer.pattern = sceneData.pattern.map(s => ({...s}));
+            layer.fx = {...sceneData.fx};
         }
 
-        function getCurrentMacros() {
-            const morph = state.morphAmount;
+        function getCurrentMacros(layer) {
+            const morph = layer.morphAmount;
             
-            if (morph === 0 || !state.scenes.A || !state.scenes.B) {
-                return state.macros;
+            if (morph === 0 || !layer.scenes.A || !layer.scenes.B) {
+                return layer.macros;
             }
             
-            const sceneA = state.scenes.A;
-            const sceneB = state.scenes.B;
+            const sceneA = layer.scenes.A;
+            const sceneB = layer.scenes.B;
             const morphed = {};
             
-            for (const key in state.macros) {
+            for (const key in layer.macros) {
                 morphed[key] = lerp(sceneA.macros[key], sceneB.macros[key], morph);
             }
             
@@ -1217,25 +1344,26 @@
         // ============================================================================
         
         function updateUI() {
-            // Update step grid
+            const layer = getCurrentLayer();
+            
+            // Update sequencer
             document.querySelectorAll('.step').forEach((el, i) => {
-                if (i >= state.length) {
+                if (i >= globalState.length) {
                     el.parentElement.style.display = 'none';
                     return;
                 }
                 el.parentElement.style.display = 'flex';
-                el.classList.toggle('active', state.pattern[i].t === 1);
-                el.classList.toggle('current', i === state.currentStep && state.playing);
-                el.classList.toggle('accent', state.pattern[i].acc === 1);
+                el.classList.toggle('active', layer.pattern[i].t === 1);
+                el.classList.toggle('current', i === globalState.currentStep && globalState.playing);
+                el.classList.toggle('accent', layer.pattern[i].acc === 1);
                 
-                // Show note in step
-                const note = state.pattern[i].note;
-                if (state.pattern[i].t) {
-                    const scaleNotes = scales[state.scale];
+                const note = layer.pattern[i].note;
+                if (layer.pattern[i].t) {
+                    const scaleNotes = scales[globalState.scale];
                     const degree = Math.abs(note) % scaleNotes.length;
                     const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
                     const semitone = scaleNotes[degree];
-                    const rootIdx = noteNames.indexOf(state.root);
+                    const rootIdx = noteNames.indexOf(globalState.root);
                     const noteIdx = (rootIdx + semitone) % 12;
                     el.textContent = noteNames[noteIdx];
                 } else {
@@ -1245,21 +1373,21 @@
             
             // Update note sliders
             document.querySelectorAll('.note-slider').forEach((slider, i) => {
-                if (i >= state.length) return;
-                slider.value = state.pattern[i].note;
+                if (i >= globalState.length) return;
+                slider.value = layer.pattern[i].note;
                 
                 const label = slider.nextElementSibling;
                 if (label) {
-                    label.textContent = state.pattern[i].note > 0 ? `+${state.pattern[i].note}` : state.pattern[i].note;
+                    label.textContent = layer.pattern[i].note > 0 ? `+${layer.pattern[i].note}` : layer.pattern[i].note;
                 }
             });
             
-            // Update knob rotations
+            // Update knobs
             document.querySelectorAll('.knob').forEach(knob => {
                 const macro = knob.dataset.macro;
-                if (!macro || !state.macros.hasOwnProperty(macro)) return;
+                if (!macro || !layer.macros.hasOwnProperty(macro)) return;
                 
-                const value = state.macros[macro];
+                const value = layer.macros[macro];
                 const rotation = -140 + (value * 280);
                 knob.style.transform = `rotate(${rotation}deg)`;
                 
@@ -1271,25 +1399,31 @@
         }
 
         function updateAllControls() {
-            // Update all sliders and inputs
-            document.getElementById('tempoInput').value = state.tempo;
-            document.getElementById('lengthSelect').value = state.length;
-            document.getElementById('rootSelect').value = state.root;
-            document.getElementById('scaleSelect').value = state.scale;
-            document.getElementById('octaveSelect').value = state.octaveRange;
+            const layer = getCurrentLayer();
             
-            // Voice controls
-            updateSlider('driveSlider', 'driveFill', state.voice.drive * 100);
-            updateSlider('tuneSlider', 'tuneFill', state.voice.tune * 100);
-            updateSlider('ratio1Slider', 'ratio1Fill', state.voice.ratio1 * 100);
-            updateSlider('ratio2Slider', 'ratio2Fill', state.voice.ratio2 * 100);
-            updateSlider('fmIndexSlider', 'fmIndexFill', state.voice.fmIndex * 100);
+            document.getElementById('tempoInput').value = globalState.tempo;
+            document.getElementById('lengthSelect').value = globalState.length;
+            document.getElementById('rootSelect').value = globalState.root;
+            document.getElementById('scaleSelect').value = globalState.scale;
+            document.getElementById('octaveSelect').value = layer.octaveRange;
             
-            // FX controls
-            updateSlider('delayMixSlider', 'delayMixFill', state.fx.delayMix * 100);
-            updateSlider('delayTimeSlider', 'delayTimeFill', state.fx.delayTime * 100);
-            updateSlider('delayFbSlider', 'delayFbFill', state.fx.delayFb * 100);
-            updateSlider('reverbSlider', 'reverbFill', state.fx.reverb * 100);
+            // Update mode buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === layer.mode);
+            });
+            
+            updateSlider('driveSlider', 'driveFill', layer.voice.drive * 100);
+            updateSlider('tuneSlider', 'tuneFill', layer.voice.tune * 100);
+            updateSlider('ratio1Slider', 'ratio1Fill', layer.voice.ratio1 * 100);
+            updateSlider('ratio2Slider', 'ratio2Fill', layer.voice.ratio2 * 100);
+            updateSlider('fmIndexSlider', 'fmIndexFill', layer.voice.fmIndex * 100);
+            
+            updateSlider('delayMixSlider', 'delayMixFill', layer.fx.delayMix * 100);
+            updateSlider('delayTimeSlider', 'delayTimeFill', layer.fx.delayTime * 100);
+            updateSlider('delayFbSlider', 'delayFbFill', layer.fx.delayFb * 100);
+            updateSlider('reverbSlider', 'reverbFill', layer.fx.reverb * 100);
+            
+            updateSlider('morphSlider', 'morphFill', layer.morphAmount * 100);
         }
 
         function updateSlider(sliderId, fillId, value) {
@@ -1301,7 +1435,38 @@
         // GRID INITIALIZATION
         // ============================================================================
         
-        function initGrid() {
+        function initMacrosGrid() {
+            const grid = document.getElementById('macrosGrid');
+            grid.innerHTML = '';
+            
+            macroDefinitions.forEach(macro => {
+                const container = document.createElement('div');
+                container.className = 'macro-control';
+                
+                const label = document.createElement('label');
+                label.className = 'macro-label';
+                label.textContent = macro.label;
+                
+                const knobContainer = document.createElement('div');
+                knobContainer.className = 'knob-container';
+                
+                const knob = document.createElement('div');
+                knob.className = 'knob';
+                knob.dataset.macro = macro.key;
+                
+                const value = document.createElement('span');
+                value.className = 'knob-value';
+                value.textContent = macro.default.toFixed(2);
+                
+                knobContainer.appendChild(knob);
+                knobContainer.appendChild(value);
+                container.appendChild(label);
+                container.appendChild(knobContainer);
+                grid.appendChild(container);
+            });
+        }
+
+        function initSequencerGrid() {
             const grid = document.getElementById('sequencerGrid');
             grid.innerHTML = '';
             
@@ -1309,19 +1474,39 @@
                 const container = document.createElement('div');
                 container.className = 'step-container';
                 
-                // Step button
                 const step = document.createElement('div');
                 step.className = 'step';
+                
+                let pressTimer;
+                step.addEventListener('touchstart', (e) => {
+                    pressTimer = setTimeout(() => {
+                        const layer = getCurrentLayer();
+                        layer.pattern[i].acc = 1 - layer.pattern[i].acc;
+                        updateUI();
+                        navigator.vibrate && navigator.vibrate(50);
+                    }, 400);
+                    e.preventDefault();
+                });
+                
+                step.addEventListener('touchend', (e) => {
+                    clearTimeout(pressTimer);
+                    e.preventDefault();
+                });
+                
+                step.addEventListener('touchcancel', () => {
+                    clearTimeout(pressTimer);
+                });
+                
                 step.onclick = (e) => {
+                    const layer = getCurrentLayer();
                     if (e.shiftKey) {
-                        state.pattern[i].acc = 1 - state.pattern[i].acc;
+                        layer.pattern[i].acc = 1 - layer.pattern[i].acc;
                     } else {
-                        state.pattern[i].t = 1 - state.pattern[i].t;
+                        layer.pattern[i].t = 1 - layer.pattern[i].t;
                     }
                     updateUI();
                 };
                 
-                // Note slider
                 const slider = document.createElement('input');
                 slider.type = 'range';
                 slider.className = 'note-slider';
@@ -1329,7 +1514,8 @@
                 slider.max = '7';
                 slider.value = '0';
                 slider.oninput = function() {
-                    state.pattern[i].note = parseInt(this.value);
+                    const layer = getCurrentLayer();
+                    layer.pattern[i].note = parseInt(this.value);
                     updateUI();
                 };
                 
@@ -1342,8 +1528,39 @@
                 container.appendChild(label);
                 grid.appendChild(container);
             }
+        }
+
+        function initModeSelector() {
+            const selector = document.getElementById('modeSelector');
+            const modes = ['drum', 'bass', 'lead', 'pad'];
             
-            updateUI();
+            modes.forEach(mode => {
+                const btn = document.createElement('button');
+                btn.className = 'btn mode-btn';
+                btn.dataset.mode = mode;
+                btn.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+                btn.onclick = () => {
+                    const layer = getCurrentLayer();
+                    layer.mode = mode;
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const modePresets = {
+                        drum: { shape: 0.25, melodicize: 0.05, decay: 0.3 },
+                        bass: { shape: 0.45, melodicize: 0.2, decay: 0.4 },
+                        lead: { shape: 0.65, melodicize: 0.5, decay: 0.5 },
+                        pad: { shape: 0.85, melodicize: 0.7, decay: 0.7 }
+                    };
+                    
+                    const preset = modePresets[mode];
+                    for (const key in preset) {
+                        layer.macros[key] = preset[key];
+                    }
+                    
+                    updateUI();
+                };
+                selector.appendChild(btn);
+            });
         }
 
         // ============================================================================
@@ -1356,19 +1573,31 @@
         let knobStartValue = 0;
 
         function initKnobs() {
-            const knobs = document.querySelectorAll('.knob');
-            
-            knobs.forEach(knob => {
-                knob.addEventListener('mousedown', (e) => {
-                    const macro = knob.dataset.macro;
+            document.addEventListener('mousedown', (e) => {
+                if (e.target.classList.contains('knob')) {
+                    const macro = e.target.dataset.macro;
+                    const layer = getCurrentLayer();
                     activeKnob = macro;
-                    activeKnobElement = knob;
+                    activeKnobElement = e.target;
                     knobStartY = e.clientY;
-                    knobStartValue = state.macros[macro];
+                    knobStartValue = layer.macros[macro];
                     e.preventDefault();
                     document.body.style.cursor = 'ns-resize';
-                    knob.style.borderColor = 'rgba(109, 217, 219, 0.9)';
-                });
+                    e.target.style.borderColor = 'rgba(109, 217, 219, 0.9)';
+                }
+            });
+            
+            document.addEventListener('touchstart', (e) => {
+                if (e.target.classList.contains('knob')) {
+                    const macro = e.target.dataset.macro;
+                    const layer = getCurrentLayer();
+                    activeKnob = macro;
+                    activeKnobElement = e.target;
+                    knobStartY = e.touches[0].clientY;
+                    knobStartValue = layer.macros[macro];
+                    e.preventDefault();
+                    e.target.style.borderColor = 'rgba(109, 217, 219, 0.9)';
+                }
             });
             
             document.addEventListener('mousemove', (e) => {
@@ -1376,7 +1605,20 @@
                 
                 const delta = (knobStartY - e.clientY) / 150;
                 const newValue = clamp(knobStartValue + delta, 0, 1);
-                state.macros[activeKnob] = newValue;
+                const layer = getCurrentLayer();
+                layer.macros[activeKnob] = newValue;
+                
+                updateUI();
+                e.preventDefault();
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (!activeKnob) return;
+                
+                const delta = (knobStartY - e.touches[0].clientY) / 150;
+                const newValue = clamp(knobStartValue + delta, 0, 1);
+                const layer = getCurrentLayer();
+                layer.macros[activeKnob] = newValue;
                 
                 updateUI();
                 e.preventDefault();
@@ -1392,7 +1634,34 @@
                     document.body.style.cursor = 'default';
                 }
             });
+            
+            document.addEventListener('touchend', () => {
+                if (activeKnob) {
+                    if (activeKnobElement) {
+                        activeKnobElement.style.borderColor = '';
+                    }
+                    activeKnob = null;
+                    activeKnobElement = null;
+                }
+            });
         }
+
+        // ============================================================================
+        // LAYER SWITCHING
+        // ============================================================================
+        
+        document.querySelectorAll('.layer-tab').forEach(tab => {
+            tab.onclick = () => {
+                const layerIndex = parseInt(tab.dataset.layer);
+                globalState.currentLayer = layerIndex;
+                
+                document.querySelectorAll('.layer-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                updateAllControls();
+                updateUI();
+            };
+        });
 
         // ============================================================================
         // TRANSPORT CONTROLS
@@ -1401,19 +1670,19 @@
         document.getElementById('playBtn').onclick = async function() {
             await initAudio();
             
-            if (state.playing) {
+            if (globalState.playing) {
                 Tone.Transport.stop();
                 loop.stop();
-                state.playing = false;
+                globalState.playing = false;
                 this.classList.remove('playing');
                 this.textContent = '▶';
-                state.currentStep = 0;
+                globalState.currentStep = 0;
             } else {
-                state.currentStep = 0;
+                globalState.currentStep = 0;
                 Tone.Transport.position = 0;
-                loop.start(0);              // start loop first
-                Tone.Transport.start();     // then start transport
-                state.playing = true;
+                loop.start(0);
+                Tone.Transport.start();
+                globalState.playing = true;
                 this.classList.add('playing');
                 this.textContent = '⏸';
             }
@@ -1425,20 +1694,20 @@
         // ============================================================================
         
         document.getElementById('tempoInput').oninput = function() {
-            state.tempo = parseInt(this.value);
+            globalState.tempo = parseInt(this.value);
             if (initialized) {
-                Tone.Transport.bpm.value = state.tempo;
+                Tone.Transport.bpm.value = globalState.tempo;
             }
         };
 
         document.getElementById('lengthSelect').onchange = function() {
-            const wasPlaying = state.playing;
+            const wasPlaying = globalState.playing;
             if (wasPlaying) {
                 document.getElementById('playBtn').click();
             }
             
-            state.length = parseInt(this.value);
-            state.currentStep = 0;
+            globalState.length = parseInt(this.value);
+            globalState.currentStep = 0;
             updateUI();
             
             if (wasPlaying) {
@@ -1447,33 +1716,28 @@
         };
 
         document.getElementById('rootSelect').onchange = function() {
-            state.root = this.value;
+            globalState.root = this.value;
             updateUI();
         };
 
         document.getElementById('scaleSelect').onchange = function() {
-            state.scale = this.value;
+            globalState.scale = this.value;
             updateUI();
         };
 
         document.getElementById('octaveSelect').onchange = function() {
-            state.octaveRange = parseInt(this.value);
+            const layer = getCurrentLayer();
+            layer.octaveRange = parseInt(this.value);
         };
 
-        // Random button
         document.getElementById('randomBtn').onclick = () => {
-            // Randomize macros within musical ranges
-            state.macros.shape = lerp(0.25, 0.65, Math.random());
-            state.macros.density = lerp(0.1, 0.4, Math.random());
-            state.macros.entropy = lerp(0.05, 0.3, Math.random());
-            state.macros.contrast = lerp(0.4, 0.8, Math.random());
-            state.macros.melodicize = lerp(0.0, 0.4, Math.random());
-            state.macros.metallic = lerp(0.2, 0.6, Math.random());
-            state.macros.decay = lerp(0.2, 0.7, Math.random());
-            state.macros.spread = lerp(0.1, 0.4, Math.random());
+            const layer = getCurrentLayer();
             
-            // Random pattern
-            state.pattern.forEach((step, i) => {
+            macroDefinitions.forEach(macro => {
+                layer.macros[macro.key] = Math.random();
+            });
+            
+            layer.pattern.forEach((step, i) => {
                 const isDownbeat = i % 4 === 0;
                 step.t = isDownbeat ? 1 : (Math.random() < 0.35 ? 1 : 0);
                 step.acc = Math.random() < 0.15 ? 1 : 0;
@@ -1483,25 +1747,24 @@
             updateUI();
         };
 
-        // Evolve button
         document.getElementById('evolveBtn').onclick = () => {
-            // Mutate macros slightly
-            for (const key in state.macros) {
-                const current = state.macros[key];
+            const layer = getCurrentLayer();
+            
+            for (const key in layer.macros) {
+                const current = layer.macros[key];
                 const mutation = gauss(0, 0.08);
-                state.macros[key] = clamp(current + mutation, 0, 1);
+                layer.macros[key] = clamp(current + mutation, 0, 1);
             }
             
-            // Evolve pattern
             const mutateSteps = Math.floor(Math.random() * 3) + 1;
             for (let i = 0; i < mutateSteps; i++) {
-                const idx = Math.floor(Math.random() * state.length);
+                const idx = Math.floor(Math.random() * globalState.length);
                 if (Math.random() < 0.5) {
-                    state.pattern[idx].t = 1 - state.pattern[idx].t;
+                    layer.pattern[idx].t = 1 - layer.pattern[idx].t;
                 } else if (Math.random() < 0.5) {
-                    state.pattern[idx].acc = 1 - state.pattern[idx].acc;
+                    layer.pattern[idx].acc = 1 - layer.pattern[idx].acc;
                 } else {
-                    state.pattern[idx].note = clamp(state.pattern[idx].note + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 3), -7, 7);
+                    layer.pattern[idx].note = clamp(layer.pattern[idx].note + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 3), -7, 7);
                 }
             }
             
@@ -1509,59 +1772,36 @@
         };
 
         // ============================================================================
-        // MODE PRESETS
-        // ============================================================================
-        
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                state.mode = btn.dataset.mode;
-                
-                // Preset macro biases per mode
-                const modePresets = {
-                    drum: { shape: 0.25, melodicize: 0.05, decay: 0.3 },
-                    bass: { shape: 0.45, melodicize: 0.2, decay: 0.4 },
-                    lead: { shape: 0.65, melodicize: 0.5, decay: 0.5 },
-                    pad: { shape: 0.85, melodicize: 0.7, decay: 0.7 }
-                };
-                
-                const preset = modePresets[state.mode];
-                for (const key in preset) {
-                    state.macros[key] = preset[key];
-                }
-                
-                updateUI();
-            };
-        });
-
-        // ============================================================================
         // VOICE SLIDERS
         // ============================================================================
         
         document.getElementById('driveSlider').oninput = function() {
-            state.voice.drive = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.voice.drive = this.value / 100;
             document.getElementById('driveFill').style.width = this.value + '%';
         };
 
         document.getElementById('tuneSlider').oninput = function() {
-            state.voice.tune = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.voice.tune = this.value / 100;
             document.getElementById('tuneFill').style.width = this.value + '%';
         };
 
         document.getElementById('ratio1Slider').oninput = function() {
-            state.voice.ratio1 = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.voice.ratio1 = this.value / 100;
             document.getElementById('ratio1Fill').style.width = this.value + '%';
         };
 
         document.getElementById('ratio2Slider').oninput = function() {
-            state.voice.ratio2 = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.voice.ratio2 = this.value / 100;
             document.getElementById('ratio2Fill').style.width = this.value + '%';
         };
 
         document.getElementById('fmIndexSlider').oninput = function() {
-            state.voice.fmIndex = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.voice.fmIndex = this.value / 100;
             document.getElementById('fmIndexFill').style.width = this.value + '%';
         };
 
@@ -1570,36 +1810,40 @@
         // ============================================================================
         
         document.getElementById('delayMixSlider').oninput = function() {
-            state.fx.delayMix = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.fx.delayMix = this.value / 100;
             document.getElementById('delayMixFill').style.width = this.value + '%';
-            if (initialized && window.audioEngine) {
-                window.audioEngine.delay.wet.value = state.fx.delayMix;
+            if (initialized && audioEngines[globalState.currentLayer]) {
+                audioEngines[globalState.currentLayer].delay.wet.value = layer.fx.delayMix;
             }
         };
 
         document.getElementById('delayTimeSlider').oninput = function() {
-            state.fx.delayTime = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.fx.delayTime = this.value / 100;
             document.getElementById('delayTimeFill').style.width = this.value + '%';
-            if (initialized && window.audioEngine) {
+            if (initialized && audioEngines[globalState.currentLayer]) {
                 const times = ['16n', '16n.', '8n', '8n.', '4n', '4n.', '2n'];
-                const idx = Math.floor(state.fx.delayTime * (times.length - 1));
-                window.audioEngine.delay.delayTime.value = times[idx];
+                const idx = Math.floor(layer.fx.delayTime * (times.length - 1));
+                audioEngines[globalState.currentLayer].delay.delayTime.value = times[idx];
             }
         };
 
         document.getElementById('delayFbSlider').oninput = function() {
-            state.fx.delayFb = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.fx.delayFb = this.value / 100;
             document.getElementById('delayFbFill').style.width = this.value + '%';
-            if (initialized && window.audioEngine) {
-                window.audioEngine.delay.feedback.value = state.fx.delayFb;
+            if (initialized && audioEngines[globalState.currentLayer]) {
+                audioEngines[globalState.currentLayer].delay.feedback.value = layer.fx.delayFb;
             }
         };
 
         document.getElementById('reverbSlider').oninput = function() {
-            state.fx.reverb = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.fx.reverb = this.value / 100;
             document.getElementById('reverbFill').style.width = this.value + '%';
-            if (initialized && window.audioEngine) {
-                window.audioEngine.reverb.wet.value = state.fx.reverb;
+            if (initialized && audioEngines[globalState.currentLayer]) {
+                audioEngines[globalState.currentLayer].reverb.wet.value = layer.fx.reverb;
             }
         };
 
@@ -1608,42 +1852,46 @@
         // ============================================================================
         
         document.getElementById('sceneABtn').onclick = function() {
+            const layer = getCurrentLayer();
             document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            state.currentScene = 'A';
-            if (state.scenes.A) {
-                loadScene(state.scenes.A);
+            layer.currentScene = 'A';
+            if (layer.scenes.A) {
+                loadScene(layer, layer.scenes.A);
+                updateAllControls();
+                updateUI();
             }
         };
 
         document.getElementById('sceneBBtn').onclick = function() {
+            const layer = getCurrentLayer();
             document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            state.currentScene = 'B';
-            if (state.scenes.B) {
-                loadScene(state.scenes.B);
+            layer.currentScene = 'B';
+            if (layer.scenes.B) {
+                loadScene(layer, layer.scenes.B);
+                updateAllControls();
+                updateUI();
             }
         };
 
         document.getElementById('saveSceneBtn').onclick = function() {
-            state.scenes[state.currentScene] = saveCurrentScene();
-            console.log(`💾 Scene ${state.currentScene} saved`);
+            const layer = getCurrentLayer();
+            layer.scenes[layer.currentScene] = saveCurrentScene(layer);
+            console.log(`💾 Layer ${globalState.currentLayer + 1} Scene ${layer.currentScene} saved`);
         };
 
         document.getElementById('morphSlider').oninput = function() {
-            state.morphAmount = this.value / 100;
+            const layer = getCurrentLayer();
+            layer.morphAmount = this.value / 100;
             document.getElementById('morphFill').style.width = this.value + '%';
         };
 
-        // Test tone button - bypasses sequencer to test audio chain
         document.getElementById('testToneBtn').onclick = async function() {
             await initAudio();
-            const engine = window.audioEngine;
+            const engine = audioEngines[globalState.currentLayer];
             if (engine) {
                 engine.fmSynth.triggerAttackRelease('C3', 0.5);
-                console.log('🔊 Test tone triggered');
-            } else {
-                console.error('❌ No audio engine');
             }
         };
 
@@ -1652,11 +1900,13 @@
         // ============================================================================
         
         window.addEventListener('load', () => {
-            console.log('🚀 Percaloid Engine v2 loading...');
-            initGrid();
+            console.log('🚀 Percaloid Engine v2 - 3 Layer System');
+            initMacrosGrid();
+            initSequencerGrid();
+            initModeSelector();
             initKnobs();
+            updateAllControls();
             updateUI();
-            console.log('✨ Ready! Press play to unleash the beast.');
         });
     </script>
 </body>
