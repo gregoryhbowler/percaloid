@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Percaloid Engine v2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #0a0e14;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: grid;
+            grid-template-rows: auto 1fr auto auto;
+            min-height: 100vh;
+            padding: 12px;
+            gap: 12px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .top-bar {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(20, 25, 35, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(109, 217, 219, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 80px;
+        }
+
+        .control-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6dd9db;
+            font-weight: 600;
+        }
+
+        .select-input, .number-input {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(109, 217, 219, 0.4);
+            border-radius: 3px;
+            padding: 6px 10px;
+            color: #e0e0e0;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .select-input:hover, .number-input:hover {
+            border-color: rgba(109, 217, 219, 0.6);
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .number-input {
+            width: 70px;
+        }
+
+        .btn {
+            background: rgba(109, 217, 219, 0.12);
+            border: 1px solid rgba(109, 217, 219, 0.3);
+            border-radius: 3px;
+            padding: 8px 16px;
+            color: #6dd9db;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            background: rgba(109, 217, 219, 0.25);
+            border-color: rgba(109, 217, 219, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.active {
+            background: #6dd9db;
+            color: #0a0e14;
+            border-color: #6dd9db;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 220px 1fr 220px;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        .macros-panel, .grid-panel, .voice-panel {
+            background: rgba(20, 25, 35, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(109, 217, 219, 0.2);
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .macros-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            overflow-y: auto;
+            max-height: calc(100vh - 300px);
+        }
+
+        .macro-control {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .macro-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #6dd9db;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .knob-container {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            margin: 0 auto;
+        }
+
+        .knob {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, rgba(109, 217, 219, 0.15), rgba(0, 0, 0, 0.8));
+            border: 3px solid rgba(109, 217, 219, 0.3);
+            position: relative;
+            cursor: ns-resize;
+            transition: border-color 0.2s;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .knob:hover {
+            border-color: rgba(109, 217, 219, 0.6);
+        }
+
+        .knob::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, #6dd9db, rgba(109, 217, 219, 0.6));
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+            pointer-events: none;
+            box-shadow: 0 0 4px rgba(109, 217, 219, 0.5);
+        }
+
+        .knob-value {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #808080;
+            font-weight: 600;
+        }
+
+        .grid-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .sequencer-grid {
+            display: grid;
+            grid-template-columns: repeat(16, 40px);
+            gap: 4px;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .step-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(109, 217, 219, 0.25);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.12s;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #6dd9db;
+        }
+
+        .step:hover {
+            border-color: rgba(109, 217, 219, 0.6);
+            background: rgba(109, 217, 219, 0.15);
+            transform: scale(1.05);
+        }
+
+        .step:active {
+            transform: scale(0.95);
+        }
+
+        .step.active {
+            background: linear-gradient(135deg, #6dd9db, #5ac5c7);
+            border-color: #6dd9db;
+            box-shadow: 0 0 15px rgba(109, 217, 219, 0.6);
+            color: #0a0e14;
+        }
+
+        .step.current {
+            border-color: #ff9f40;
+            box-shadow: 0 0 12px rgba(255, 159, 64, 0.5);
+            animation: pulse 0.15s ease-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .step.accent::before {
+            content: '';
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 7px;
+            height: 7px;
+            background: #ff9f40;
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(255, 159, 64, 0.6);
+        }
+
+        .note-slider {
+            width: 40px;
+            height: 80px;
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            appearance: slider-vertical;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 3px;
+            outline: none;
+            cursor: ns-resize;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .note-slider:hover {
+            opacity: 1;
+        }
+
+        .note-label {
+            font-size: 8px;
+            color: #6dd9db;
+            text-align: center;
+            height: 16px;
+            line-height: 16px;
+        }
+
+        .voice-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .voice-control {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .mode-btn {
+            padding: 8px 6px;
+            font-size: 9px;
+        }
+
+        .slider-container {
+            position: relative;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(109, 217, 219, 0.2);
+        }
+
+        .slider-fill {
+            height: 100%;
+            background: linear-gradient(90deg, rgba(109, 217, 219, 0.7), #6dd9db);
+            border-radius: 5px;
+            transition: width 0.1s;
+            pointer-events: none;
+            box-shadow: 0 0 8px rgba(109, 217, 219, 0.4);
+        }
+
+        .slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .scene-controls {
+            background: rgba(20, 25, 35, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(109, 217, 219, 0.2);
+            padding: 12px 16px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .scene-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .scene-btn {
+            width: 60px;
+            padding: 10px;
+        }
+
+        .morph-control {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .morph-label {
+            font-size: 10px;
+            color: #6dd9db;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .fx-footer {
+            background: rgba(20, 25, 35, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(109, 217, 219, 0.2);
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .fx-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .fx-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #6dd9db;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 70px;
+        }
+
+        .transport {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .play-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(109, 217, 219, 0.15);
+            border: 3px solid rgba(109, 217, 219, 0.4);
+            color: #6dd9db;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .play-btn:hover {
+            background: rgba(109, 217, 219, 0.25);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(109, 217, 219, 0.2);
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+
+        .play-btn.playing {
+            background: #6dd9db;
+            color: #0a0e14;
+            border-color: #6dd9db;
+            box-shadow: 0 0 20px rgba(109, 217, 219, 0.5);
+        }
+
+        h3 {
+            text-align: center;
+            color: #6dd9db;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .hint {
+            text-align: center;
+            color: #606060;
+            font-size: 9px;
+            padding-top: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(109, 217, 219, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(109, 217, 219, 0.5);
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(109, 217, 219, 0.2);
+            margin: 12px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-bar">
+            <div class="transport">
+                <button class="play-btn" id="playBtn">▶</button>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Tempo</label>
+                <input type="number" class="number-input" id="tempoInput" value="120" min="60" max="200">
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Length</label>
+                <select class="select-input" id="lengthSelect">
+                    <option value="4">4</option>
+                    <option value="8">8</option>
+                    <option value="16" selected>16</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Root</label>
+                <select class="select-input" id="rootSelect">
+                    <option value="C">C</option>
+                    <option value="D" selected>D</option>
+                    <option value="E">E</option>
+                    <option value="F">F</option>
+                    <option value="G">G</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Scale</label>
+                <select class="select-input" id="scaleSelect">
+                    <option value="major">Major</option>
+                    <option value="minor" selected>Minor</option>
+                    <option value="dorian">Dorian</option>
+                    <option value="phrygian">Phrygian</option>
+                    <option value="lydian">Lydian</option>
+                    <option value="mixolydian">Mixolydian</option>
+                    <option value="locrian">Locrian</option>
+                    <option value="pentatonic">Pentatonic</option>
+                    <option value="harmonic">Harmonic Min</option>
+                    <option value="melodic">Melodic Min</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Octave Range</label>
+                <select class="select-input" id="octaveSelect">
+                    <option value="1">1-2</option>
+                    <option value="2">2-3</option>
+                    <option value="3" selected>3-4</option>
+                    <option value="4">4-5</option>
+                    <option value="5">5-6</option>
+                </select>
+            </div>
+
+            <button class="btn" id="evolveBtn">Evolve</button>
+            <button class="btn" id="randomBtn">Random</button>
+            <button class="btn" id="testToneBtn">Test Tone</button>
+        </div>
+
+        <div class="main-content">
+            <div class="macros-panel">
+                <h3>Macros</h3>
+                
+                <div class="macro-control">
+                    <label class="macro-label">Shape</label>
+                    <div class="knob-container">
+                        <div class="knob" data-macro="shape"></div>
+                        <span class="knob-value">0.35</span>
+                    </div>
+                </div>
+
+                <div class="macro-control">
+                    <label class="macro-label">Density</label>
+                    <div class="knob-container">
+                        <div class="knob" data-macro="density"></div>
+                        <span class="knob-value">0.20</span>
+                    </div>
+                </div>
+
+                <div class="macro-control">
+                    <label class="macro-label">Entropy</label>
+                    <div class="knob-container">
+                        <div class="knob" data-macro="entropy"></div>
+                        <span class="knob-value">0.15</span>
+                    </div>
+                </div>
+
+                <div class="macro-control">
+                    <label class="macro-label">Contrast</label>
+                    <div class="knob-container">
+                        <div class="knob" data-macro="contrast"></div>
+                        <span class="knob-value">0.60</span>
+                    </div>
+                </div>
+
+                <div class="macro-control">
+                    <label class="macro-label">Melodicize</label>
+                    <div class="knob-container">
+                        <div class="knob" data-macro="melodicize"></div>
+                        <span class="knob-value">0.10</span>
+                    </div>
+                </div>
+
+                <div class="macro-control">
+                    <label class="macro-label">Metallic</label>
+                    <div class="knob-container">
+                        <div class="knob" data-macro="metallic"></div>
+                        <span class="knob-value">0.30</span>
+                    </div>
+                </div>
+
+                <div class="macro-control">
+                    <label class="macro-label">Decay</label>
+                    <div class="knob-container">
+                        <div class="knob" data-macro="decay"></div>
+                        <span class="knob-value">0.40</span>
+                    </div>
+                </div>
+
+                <div class="macro-control">
+                    <label class="macro-label">Spread</label>
+                    <div class="knob-container">
+                        <div class="knob" data-macro="spread"></div>
+                        <span class="knob-value">0.25</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-panel">
+                <div class="sequencer-grid" id="sequencerGrid"></div>
+                <div class="hint">
+                    Click step to toggle • Shift+Click for accent • Slider for note
+                </div>
+            </div>
+
+            <div class="voice-panel">
+                <h3>Voice</h3>
+                
+                <div class="voice-control">
+                    <label class="control-label">Mode</label>
+                    <div class="mode-selector">
+                        <button class="btn mode-btn active" data-mode="drum">Drum</button>
+                        <button class="btn mode-btn" data-mode="bass">Bass</button>
+                        <button class="btn mode-btn" data-mode="lead">Lead</button>
+                        <button class="btn mode-btn" data-mode="pad">Pad</button>
+                    </div>
+                </div>
+
+                <div class="voice-control">
+                    <label class="control-label">Drive</label>
+                    <div class="slider-container">
+                        <div class="slider-fill" id="driveFill" style="width: 30%"></div>
+                        <input type="range" class="slider" id="driveSlider" min="0" max="100" value="30">
+                    </div>
+                </div>
+
+                <div class="voice-control">
+                    <label class="control-label">Tune</label>
+                    <div class="slider-container">
+                        <div class="slider-fill" id="tuneFill" style="width: 50%"></div>
+                        <input type="range" class="slider" id="tuneSlider" min="0" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="voice-control">
+                    <label class="control-label">FM Ratio 1</label>
+                    <div class="slider-container">
+                        <div class="slider-fill" id="ratio1Fill" style="width: 50%"></div>
+                        <input type="range" class="slider" id="ratio1Slider" min="0" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="voice-control">
+                    <label class="control-label">FM Ratio 2</label>
+                    <div class="slider-container">
+                        <div class="slider-fill" id="ratio2Fill" style="width: 60%"></div>
+                        <input type="range" class="slider" id="ratio2Slider" min="0" max="100" value="60">
+                    </div>
+                </div>
+
+                <div class="voice-control">
+                    <label class="control-label">FM Index</label>
+                    <div class="slider-container">
+                        <div class="slider-fill" id="fmIndexFill" style="width: 40%"></div>
+                        <input type="range" class="slider" id="fmIndexSlider" min="0" max="100" value="40">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="scene-controls">
+            <div class="scene-btns">
+                <button class="btn scene-btn active" id="sceneABtn">Scene A</button>
+                <button class="btn scene-btn" id="sceneBBtn">Scene B</button>
+            </div>
+            
+            <div class="morph-control">
+                <span class="morph-label">A</span>
+                <div class="slider-container" style="flex: 1;">
+                    <div class="slider-fill" id="morphFill" style="width: 0%"></div>
+                    <input type="range" class="slider" id="morphSlider" min="0" max="100" value="0">
+                </div>
+                <span class="morph-label">B</span>
+            </div>
+
+            <button class="btn" id="saveSceneBtn">Save Scene</button>
+        </div>
+
+        <div class="fx-footer">
+            <div class="fx-control">
+                <label class="fx-label">Delay Mix</label>
+                <div class="slider-container" style="flex: 1;">
+                    <div class="slider-fill" id="delayMixFill" style="width: 25%"></div>
+                    <input type="range" class="slider" id="delayMixSlider" min="0" max="100" value="25">
+                </div>
+            </div>
+
+            <div class="fx-control">
+                <label class="fx-label">Delay Time</label>
+                <div class="slider-container" style="flex: 1;">
+                    <div class="slider-fill" id="delayTimeFill" style="width: 35%"></div>
+                    <input type="range" class="slider" id="delayTimeSlider" min="0" max="100" value="35">
+                </div>
+            </div>
+
+            <div class="fx-control">
+                <label class="fx-label">Delay FB</label>
+                <div class="slider-container" style="flex: 1;">
+                    <div class="slider-fill" id="delayFbFill" style="width: 40%"></div>
+                    <input type="range" class="slider" id="delayFbSlider" min="0" max="100" value="40">
+                </div>
+            </div>
+
+            <div class="fx-control">
+                <label class="fx-label">Reverb Mix</label>
+                <div class="slider-container" style="flex: 1;">
+                    <div class="slider-fill" id="reverbFill" style="width: 18%"></div>
+                    <input type="range" class="slider" id="reverbSlider" min="0" max="100" value="18">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script>
+        // ============================================================================
+        // UTILITY FUNCTIONS
+        // ============================================================================
+        
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function expMap(min, max, t) {
+            return min * Math.pow(max / min, t);
+        }
+
+        function smoothstep(min, max, t) {
+            const x = Math.max(0, Math.min(1, (t - min) / (max - min)));
+            return x * x * (3 - 2 * x);
+        }
+
+        function clamp(val, min, max) {
+            return Math.max(min, Math.min(max, val));
+        }
+
+        function gauss(mean, stdDev) {
+            const u1 = Math.random();
+            const u2 = Math.random();
+            const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+            return mean + stdDev * z0;
+        }
+
+        // ============================================================================
+        // SCALE DEFINITIONS
+        // ============================================================================
+        
+        const scales = {
+            major: [0, 2, 4, 5, 7, 9, 11],
+            minor: [0, 2, 3, 5, 7, 8, 10],
+            dorian: [0, 2, 3, 5, 7, 9, 10],
+            phrygian: [0, 1, 3, 5, 7, 8, 10],
+            lydian: [0, 2, 4, 6, 7, 9, 11],
+            mixolydian: [0, 2, 4, 5, 7, 9, 10],
+            locrian: [0, 1, 3, 5, 6, 8, 10],
+            pentatonic: [0, 2, 4, 7, 9],
+            harmonic: [0, 2, 3, 5, 7, 8, 11],
+            melodic: [0, 2, 3, 5, 7, 9, 11]
+        };
+
+        const noteFreqs = {
+            'C': 32.70, 'D': 36.71, 'E': 41.20,
+            'F': 43.65, 'G': 49.00, 'A': 55.00, 'B': 61.74
+        };
+
+        // ============================================================================
+        // STATE MANAGEMENT
+        // ============================================================================
+        
+        const state = {
+            tempo: 120,
+            length: 16,
+            playing: false,
+            currentStep: 0,
+            root: 'D',
+            scale: 'minor',
+            mode: 'drum',
+            octaveRange: 3,
+            currentScene: 'A',
+            morphAmount: 0,
+            macros: {
+                shape: 0.35,
+                density: 0.20,
+                entropy: 0.15,
+                contrast: 0.60,
+                melodicize: 0.10,
+                metallic: 0.30,
+                decay: 0.40,
+                spread: 0.25
+            },
+            voice: {
+                drive: 0.3,
+                tune: 0.5,
+                ratio1: 0.5,
+                ratio2: 0.6,
+                fmIndex: 0.4
+            },
+            fx: {
+                delayMix: 0.25,
+                delayTime: 0.35,
+                delayFb: 0.40,
+                reverb: 0.18
+            },
+            pattern: Array(16).fill(null).map(() => ({ 
+                t: 0, 
+                acc: 0, 
+                note: 0  // 0 = root, -7 to +7 for scale degrees
+            })),
+            scenes: {
+                A: null,
+                B: null
+            }
+        };
+
+        // Initialize with default kick pattern
+        [0, 4, 8, 12].forEach(i => state.pattern[i].t = 1);
+
+        // ============================================================================
+        // AUDIO ENGINE
+        // ============================================================================
+        
+        let carrier, mod1, mod2, noise, noiseEnv;
+        let filter, comb, distortion, reverb, delay;
+        let loop, initialized = false;
+
+        // Enhanced macro router with sophisticated FM and morphing
+        function getMacroMappedParams() {
+            const m = state.macros;
+            const v = state.voice;
+            
+            // Mode presets influence Shape bias
+            const modeShapeBias = {
+                drum: 0.25,
+                bass: 0.45,
+                lead: 0.65,
+                pad: 0.85
+            };
+            
+            const effectiveShape = lerp(m.shape, modeShapeBias[state.mode], 0.3);
+            
+            // SHAPE: Master drum ⇄ tone axis (MORE EXTREME)
+            const noiseMix = Math.pow(1 - smoothstep(0.05, 0.75, effectiveShape), 1.5);
+            const carrierGain = smoothstep(0.1, 0.9, effectiveShape);
+            
+            // FM ratios - WIDER RANGE for more dramatic timbral shifts
+            const baseRatio1 = lerp(0.5, 4.0, v.ratio1); // much wider range
+            const baseRatio2 = lerp(0.75, 7.0, v.ratio2); // much wider range
+            
+            // Metallic pushes toward inharmonic sweet spots (MORE EXTREME)
+            const ratio1 = lerp(baseRatio1, 1.618 * (1 + m.metallic), m.metallic * 0.7); 
+            const ratio2 = lerp(baseRatio2, 2.414 * (1 + m.metallic * 1.5), m.metallic * 0.7);
+            
+            // FM index - MUCH MORE DRAMATIC RANGE
+            const baseIndex = lerp(8, 0.5, effectiveShape); // increased from 4.5 to 8
+            const modIndex = baseIndex * (1 + m.metallic * 3) * v.fmIndex * 3; // increased multipliers
+            
+            // Envelope times - WIDER RANGE
+            const envAttack = 0.001;
+            const envDecay = expMap(0.01, 1.2, effectiveShape * (1 + m.decay)); // extended decay range
+            const envSustain = smoothstep(0.4, 1, effectiveShape * m.melodicize) * 0.6; // increased sustain
+            const envRelease = envDecay * lerp(0.5, 1.5, m.decay);
+            
+            // Filter - MUCH MORE DRAMATIC SWEEP
+            const filterCutoff = expMap(200, 12000, effectiveShape); // wider range
+            const filterQ = lerp(0.5, 20, m.metallic) * (1 + m.contrast); // much higher Q
+            
+            // Comb/resonant body contribution (MORE PROMINENT)
+            const combMix = m.metallic * 0.8 * (1 - effectiveShape * 0.3);
+            const combFeedback = lerp(0.5, 0.95, m.metallic);
+            
+            // Drive/distortion - MORE EXTREME
+            const driveAmount = lerp(0.2, 8, m.contrast * v.drive); // much higher drive
+            const transientGain = lerp(0.3, 2.5, m.contrast); // bigger transient range
+            
+            // Pitch stability (entropy) - MORE EXTREME JITTER
+            const pitchJitter = m.entropy * 50; // doubled
+            const timingJitter = m.entropy * 0.03; // increased
+            
+            return {
+                noiseMix,
+                carrierGain,
+                ratio1,
+                ratio2,
+                modIndex,
+                envAttack,
+                envDecay,
+                envSustain,
+                envRelease,
+                filterCutoff,
+                filterQ,
+                combMix,
+                combFeedback,
+                driveAmount,
+                transientGain,
+                pitchJitter,
+                timingJitter
+            };
+        }
+
+        async function initAudio() {
+            if (initialized) return;
+            
+            await Tone.start();
+            console.log('🎵 Percaloid Engine v2 - Audio Context Started');
+            
+            // EFFECTS CHAIN - Simplified, no comb filter
+            
+            // Filter
+            filter = new Tone.Filter({
+                type: 'lowpass',
+                frequency: 3000,
+                Q: 2
+            });
+            
+            // Distortion
+            distortion = new Tone.Distortion({
+                distortion: 0.3,
+                wet: 0.4
+            });
+            
+            // Reverb
+            reverb = new Tone.Reverb({
+                decay: 2.5,
+                wet: 0.18
+            });
+            
+            // Delay
+            delay = new Tone.FeedbackDelay({
+                delayTime: '8n',
+                feedback: 0.4,
+                wet: 0.25
+            });
+            
+            // Master gain
+            const masterGain = new Tone.Gain(1.5);
+            
+            // Build signal chain: distortion -> filter -> master -> delay/reverb -> destination
+            distortion.connect(filter);
+            filter.connect(masterGain);
+            masterGain.toDestination();
+            masterGain.connect(delay);
+            masterGain.connect(reverb);
+            delay.toDestination();
+            reverb.toDestination();
+            
+            console.log('Effects chain created (no comb filter)');
+            
+            // Main FM synth voice
+            const fmSynth = new Tone.FMSynth({
+                volume: 0,
+                harmonicity: 1.5,
+                modulationIndex: 3,
+                envelope: {
+                    attack: 0.001,
+                    decay: 0.1,
+                    sustain: 0.0,
+                    release: 0.1
+                },
+                modulation: {
+                    type: 'sine'
+                },
+                modulationEnvelope: {
+                    attack: 0.001,
+                    decay: 0.2,
+                    sustain: 0,
+                    release: 0.1
+                }
+            }).connect(distortion);
+            
+            // Additional synth for richness
+            const fmSynth2 = new Tone.FMSynth({
+                volume: -6,
+                harmonicity: 2.0,
+                modulationIndex: 2,
+                envelope: {
+                    attack: 0.001,
+                    decay: 0.08,
+                    sustain: 0.0,
+                    release: 0.08
+                },
+                modulation: {
+                    type: 'sine'
+                },
+                modulationEnvelope: {
+                    attack: 0.001,
+                    decay: 0.15,
+                    sustain: 0,
+                    release: 0.08
+                }
+            }).connect(distortion);
+            
+            console.log('FM Synths created and connected to effects');
+            
+            // Noise layer
+            noise = new Tone.Noise('pink').start();
+            noiseEnv = new Tone.AmplitudeEnvelope({
+                attack: 0.001,
+                decay: 0.03,
+                sustain: 0,
+                release: 0.01
+            }).connect(distortion);
+            noise.connect(noiseEnv);
+            
+            console.log('Noise layer created');
+            
+            // Store for access
+            window.audioEngine = {
+                fmSynth,
+                fmSynth2,
+                masterGain,
+                noiseEnv,
+                noise,
+                filter,
+                distortion,
+                delay,
+                reverb
+            };
+            
+            Tone.Transport.bpm.value = state.tempo;
+            
+            // Sequencer loop
+            loop = new Tone.Loop((time) => {
+                try {
+                    const step = state.pattern[state.currentStep];
+                    const currentMacros = getCurrentMacros();
+                    
+                    // Density affects probability of triggering even when step is "off"
+                    const shouldTrigger = step.t || (Math.random() < currentMacros.density * 0.5);
+                    
+                    if (shouldTrigger) {
+                        const params = getMacroMappedParams();
+                        
+                        // Calculate pitch from scale + per-step note offset
+                        const rootFreq = noteFreqs[state.root];
+                        const scaleNotes = scales[state.scale];
+                        const octave = state.octaveRange;
+                        
+                        const scaleDegree = Math.abs(step.note) % scaleNotes.length;
+                        const octaveOffset = Math.floor(step.note / scaleNotes.length);
+                        const semitone = scaleNotes[scaleDegree];
+                        
+                        let freq = rootFreq * Math.pow(2, (semitone + (octave + octaveOffset) * 12) / 12);
+                        
+                        // Shape influences base pitch
+                        const shapePitchBias = lerp(0.7, 1.0, currentMacros.shape);
+                        freq *= shapePitchBias;
+                        
+                        // Apply entropy jitter
+                        const jitter = gauss(0, params.pitchJitter);
+                        freq *= Math.pow(2, jitter / 1200);
+                        
+                        // Apply tune offset
+                        freq *= Math.pow(2, (state.voice.tune - 0.5) * 24 / 12);
+                        
+                        // Spread: alternate pan/pitch
+                        const spreadAmount = currentMacros.spread;
+                        const stepParity = state.currentStep % 2;
+                        const spreadCents = stepParity ? spreadAmount * 20 : -spreadAmount * 20; // increased spread
+                        freq *= Math.pow(2, spreadCents / 1200);
+                        
+                        // Velocity from accent
+                        const vel = step.acc ? 1.0 : 0.7;
+                        
+                        const engine = window.audioEngine;
+                        
+                        if (!engine) {
+                            console.error('❌ Audio engine not found!');
+                            return;
+                        }
+                        
+                        // Apply macro-mapped parameters to synths
+                        const finalRatio1 = params.ratio1 * lerp(0.5, 2.0, state.voice.ratio1);
+                        const finalRatio2 = params.ratio2 * lerp(0.5, 2.0, state.voice.ratio2);
+                        const finalModIndex = params.modIndex * lerp(0.3, 3.0, state.voice.fmIndex);
+                        
+                        // Update FM parameters
+                        engine.fmSynth.harmonicity.value = finalRatio1;
+                        engine.fmSynth.modulationIndex.value = finalModIndex;
+                        engine.fmSynth.envelope.attack = params.envAttack;
+                        engine.fmSynth.envelope.decay = params.envDecay;
+                        engine.fmSynth.envelope.sustain = params.envSustain;
+                        engine.fmSynth.envelope.release = params.envRelease;
+                        
+                        engine.fmSynth2.harmonicity.value = finalRatio2;
+                        engine.fmSynth2.modulationIndex.value = finalModIndex * 0.7;
+                        engine.fmSynth2.envelope.attack = params.envAttack;
+                        engine.fmSynth2.envelope.decay = params.envDecay * 0.8;
+                        engine.fmSynth2.envelope.sustain = params.envSustain;
+                        engine.fmSynth2.envelope.release = params.envRelease;
+                        
+                        // Update filter (shape affects cutoff)
+                        engine.filter.frequency.value = params.filterCutoff;
+                        engine.filter.Q.value = params.filterQ;
+                        
+                        // Update distortion (contrast/drive)
+                        const finalDrive = params.driveAmount * lerp(0.1, 1.5, state.voice.drive);
+                        engine.distortion.distortion = clamp(finalDrive * 0.4, 0, 0.98);
+                        engine.distortion.wet.value = clamp(finalDrive * 0.5, 0, 1);
+                        
+                        // Update effects
+                        engine.reverb.wet.value = state.fx.reverb * (1 + currentMacros.melodicize * 0.8);
+                        engine.delay.wet.value = state.fx.delayMix;
+                        
+                        const duration = params.envDecay * 3;
+                        const noteName = Tone.Frequency(freq, "hz").toNote();
+                        
+                        // Trigger synths with velocity
+                        const synthVel = vel * params.carrierGain;
+                        
+                        engine.fmSynth.triggerAttackRelease(noteName, duration, time, synthVel);
+                        
+                        // Second synth for richness
+                        if (currentMacros.shape > 0.3) {
+                            engine.fmSynth2.triggerAttackRelease(noteName, duration * 0.8, time, synthVel * 0.5);
+                        }
+                        
+                        // Noise layer
+                        if (params.noiseMix > 0.1) {
+                            engine.noiseEnv.triggerAttackRelease(
+                                params.envDecay * 0.4,
+                                time,
+                                vel * params.noiseMix * params.transientGain
+                            );
+                        }
+                    }
+                    
+                    requestAnimationFrame(updateUI);
+                    state.currentStep = (state.currentStep + 1) % state.length;
+                } catch (error) {
+                    console.error('Loop error:', error.message);
+                }
+            }, '16n');
+            
+            console.log('✅ Loop created');
+            
+            initialized = true;
+            console.log('✅ Audio engine fully initialized with complete parameter routing');
+        }
+
+        // ============================================================================
+        // SCENE SYSTEM
+        // ============================================================================
+        
+        function saveCurrentScene() {
+            return {
+                macros: {...state.macros},
+                voice: {...state.voice},
+                pattern: state.pattern.map(s => ({...s})),
+                fx: {...state.fx}
+            };
+        }
+
+        function loadScene(sceneData) {
+            state.macros = {...sceneData.macros};
+            state.voice = {...sceneData.voice};
+            state.pattern = sceneData.pattern.map(s => ({...s}));
+            state.fx = {...sceneData.fx};
+            updateAllControls();
+            updateUI();
+        }
+
+        function getCurrentMacros() {
+            const morph = state.morphAmount;
+            
+            if (morph === 0 || !state.scenes.A || !state.scenes.B) {
+                return state.macros;
+            }
+            
+            const sceneA = state.scenes.A;
+            const sceneB = state.scenes.B;
+            const morphed = {};
+            
+            for (const key in state.macros) {
+                morphed[key] = lerp(sceneA.macros[key], sceneB.macros[key], morph);
+            }
+            
+            return morphed;
+        }
+
+        // ============================================================================
+        // UI UPDATES
+        // ============================================================================
+        
+        function updateUI() {
+            // Update step grid
+            document.querySelectorAll('.step').forEach((el, i) => {
+                if (i >= state.length) {
+                    el.parentElement.style.display = 'none';
+                    return;
+                }
+                el.parentElement.style.display = 'flex';
+                el.classList.toggle('active', state.pattern[i].t === 1);
+                el.classList.toggle('current', i === state.currentStep && state.playing);
+                el.classList.toggle('accent', state.pattern[i].acc === 1);
+                
+                // Show note in step
+                const note = state.pattern[i].note;
+                if (state.pattern[i].t) {
+                    const scaleNotes = scales[state.scale];
+                    const degree = Math.abs(note) % scaleNotes.length;
+                    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                    const semitone = scaleNotes[degree];
+                    const rootIdx = noteNames.indexOf(state.root);
+                    const noteIdx = (rootIdx + semitone) % 12;
+                    el.textContent = noteNames[noteIdx];
+                } else {
+                    el.textContent = '';
+                }
+            });
+            
+            // Update note sliders
+            document.querySelectorAll('.note-slider').forEach((slider, i) => {
+                if (i >= state.length) return;
+                slider.value = state.pattern[i].note;
+                
+                const label = slider.nextElementSibling;
+                if (label) {
+                    label.textContent = state.pattern[i].note > 0 ? `+${state.pattern[i].note}` : state.pattern[i].note;
+                }
+            });
+            
+            // Update knob rotations
+            document.querySelectorAll('.knob').forEach(knob => {
+                const macro = knob.dataset.macro;
+                if (!macro || !state.macros.hasOwnProperty(macro)) return;
+                
+                const value = state.macros[macro];
+                const rotation = -140 + (value * 280);
+                knob.style.transform = `rotate(${rotation}deg)`;
+                
+                const valueEl = knob.nextElementSibling;
+                if (valueEl && valueEl.classList.contains('knob-value')) {
+                    valueEl.textContent = value.toFixed(2);
+                }
+            });
+        }
+
+        function updateAllControls() {
+            // Update all sliders and inputs
+            document.getElementById('tempoInput').value = state.tempo;
+            document.getElementById('lengthSelect').value = state.length;
+            document.getElementById('rootSelect').value = state.root;
+            document.getElementById('scaleSelect').value = state.scale;
+            document.getElementById('octaveSelect').value = state.octaveRange;
+            
+            // Voice controls
+            updateSlider('driveSlider', 'driveFill', state.voice.drive * 100);
+            updateSlider('tuneSlider', 'tuneFill', state.voice.tune * 100);
+            updateSlider('ratio1Slider', 'ratio1Fill', state.voice.ratio1 * 100);
+            updateSlider('ratio2Slider', 'ratio2Fill', state.voice.ratio2 * 100);
+            updateSlider('fmIndexSlider', 'fmIndexFill', state.voice.fmIndex * 100);
+            
+            // FX controls
+            updateSlider('delayMixSlider', 'delayMixFill', state.fx.delayMix * 100);
+            updateSlider('delayTimeSlider', 'delayTimeFill', state.fx.delayTime * 100);
+            updateSlider('delayFbSlider', 'delayFbFill', state.fx.delayFb * 100);
+            updateSlider('reverbSlider', 'reverbFill', state.fx.reverb * 100);
+        }
+
+        function updateSlider(sliderId, fillId, value) {
+            document.getElementById(sliderId).value = value;
+            document.getElementById(fillId).style.width = value + '%';
+        }
+
+        // ============================================================================
+        // GRID INITIALIZATION
+        // ============================================================================
+        
+        function initGrid() {
+            const grid = document.getElementById('sequencerGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < 16; i++) {
+                const container = document.createElement('div');
+                container.className = 'step-container';
+                
+                // Step button
+                const step = document.createElement('div');
+                step.className = 'step';
+                step.onclick = (e) => {
+                    if (e.shiftKey) {
+                        state.pattern[i].acc = 1 - state.pattern[i].acc;
+                    } else {
+                        state.pattern[i].t = 1 - state.pattern[i].t;
+                    }
+                    updateUI();
+                };
+                
+                // Note slider
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.className = 'note-slider';
+                slider.min = '-7';
+                slider.max = '7';
+                slider.value = '0';
+                slider.oninput = function() {
+                    state.pattern[i].note = parseInt(this.value);
+                    updateUI();
+                };
+                
+                const label = document.createElement('div');
+                label.className = 'note-label';
+                label.textContent = '0';
+                
+                container.appendChild(step);
+                container.appendChild(slider);
+                container.appendChild(label);
+                grid.appendChild(container);
+            }
+            
+            updateUI();
+        }
+
+        // ============================================================================
+        // KNOB INTERACTION
+        // ============================================================================
+        
+        let activeKnob = null;
+        let activeKnobElement = null;
+        let knobStartY = 0;
+        let knobStartValue = 0;
+
+        function initKnobs() {
+            const knobs = document.querySelectorAll('.knob');
+            
+            knobs.forEach(knob => {
+                knob.addEventListener('mousedown', (e) => {
+                    const macro = knob.dataset.macro;
+                    activeKnob = macro;
+                    activeKnobElement = knob;
+                    knobStartY = e.clientY;
+                    knobStartValue = state.macros[macro];
+                    e.preventDefault();
+                    document.body.style.cursor = 'ns-resize';
+                    knob.style.borderColor = 'rgba(109, 217, 219, 0.9)';
+                });
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!activeKnob) return;
+                
+                const delta = (knobStartY - e.clientY) / 150;
+                const newValue = clamp(knobStartValue + delta, 0, 1);
+                state.macros[activeKnob] = newValue;
+                
+                updateUI();
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (activeKnob) {
+                    if (activeKnobElement) {
+                        activeKnobElement.style.borderColor = '';
+                    }
+                    activeKnob = null;
+                    activeKnobElement = null;
+                    document.body.style.cursor = 'default';
+                }
+            });
+        }
+
+        // ============================================================================
+        // TRANSPORT CONTROLS
+        // ============================================================================
+        
+        document.getElementById('playBtn').onclick = async function() {
+            await initAudio();
+            
+            if (state.playing) {
+                Tone.Transport.stop();
+                loop.stop();
+                state.playing = false;
+                this.classList.remove('playing');
+                this.textContent = '▶';
+                state.currentStep = 0;
+            } else {
+                state.currentStep = 0;
+                Tone.Transport.position = 0;
+                loop.start(0);              // start loop first
+                Tone.Transport.start();     // then start transport
+                state.playing = true;
+                this.classList.add('playing');
+                this.textContent = '⏸';
+            }
+            updateUI();
+        };
+
+        // ============================================================================
+        // PARAMETER CONTROLS
+        // ============================================================================
+        
+        document.getElementById('tempoInput').oninput = function() {
+            state.tempo = parseInt(this.value);
+            if (initialized) {
+                Tone.Transport.bpm.value = state.tempo;
+            }
+        };
+
+        document.getElementById('lengthSelect').onchange = function() {
+            const wasPlaying = state.playing;
+            if (wasPlaying) {
+                document.getElementById('playBtn').click();
+            }
+            
+            state.length = parseInt(this.value);
+            state.currentStep = 0;
+            updateUI();
+            
+            if (wasPlaying) {
+                setTimeout(() => document.getElementById('playBtn').click(), 100);
+            }
+        };
+
+        document.getElementById('rootSelect').onchange = function() {
+            state.root = this.value;
+            updateUI();
+        };
+
+        document.getElementById('scaleSelect').onchange = function() {
+            state.scale = this.value;
+            updateUI();
+        };
+
+        document.getElementById('octaveSelect').onchange = function() {
+            state.octaveRange = parseInt(this.value);
+        };
+
+        // Random button
+        document.getElementById('randomBtn').onclick = () => {
+            // Randomize macros within musical ranges
+            state.macros.shape = lerp(0.25, 0.65, Math.random());
+            state.macros.density = lerp(0.1, 0.4, Math.random());
+            state.macros.entropy = lerp(0.05, 0.3, Math.random());
+            state.macros.contrast = lerp(0.4, 0.8, Math.random());
+            state.macros.melodicize = lerp(0.0, 0.4, Math.random());
+            state.macros.metallic = lerp(0.2, 0.6, Math.random());
+            state.macros.decay = lerp(0.2, 0.7, Math.random());
+            state.macros.spread = lerp(0.1, 0.4, Math.random());
+            
+            // Random pattern
+            state.pattern.forEach((step, i) => {
+                const isDownbeat = i % 4 === 0;
+                step.t = isDownbeat ? 1 : (Math.random() < 0.35 ? 1 : 0);
+                step.acc = Math.random() < 0.15 ? 1 : 0;
+                step.note = Math.floor(Math.random() * 15) - 7;
+            });
+            
+            updateUI();
+        };
+
+        // Evolve button
+        document.getElementById('evolveBtn').onclick = () => {
+            // Mutate macros slightly
+            for (const key in state.macros) {
+                const current = state.macros[key];
+                const mutation = gauss(0, 0.08);
+                state.macros[key] = clamp(current + mutation, 0, 1);
+            }
+            
+            // Evolve pattern
+            const mutateSteps = Math.floor(Math.random() * 3) + 1;
+            for (let i = 0; i < mutateSteps; i++) {
+                const idx = Math.floor(Math.random() * state.length);
+                if (Math.random() < 0.5) {
+                    state.pattern[idx].t = 1 - state.pattern[idx].t;
+                } else if (Math.random() < 0.5) {
+                    state.pattern[idx].acc = 1 - state.pattern[idx].acc;
+                } else {
+                    state.pattern[idx].note = clamp(state.pattern[idx].note + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 3), -7, 7);
+                }
+            }
+            
+            updateUI();
+        };
+
+        // ============================================================================
+        // MODE PRESETS
+        // ============================================================================
+        
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                state.mode = btn.dataset.mode;
+                
+                // Preset macro biases per mode
+                const modePresets = {
+                    drum: { shape: 0.25, melodicize: 0.05, decay: 0.3 },
+                    bass: { shape: 0.45, melodicize: 0.2, decay: 0.4 },
+                    lead: { shape: 0.65, melodicize: 0.5, decay: 0.5 },
+                    pad: { shape: 0.85, melodicize: 0.7, decay: 0.7 }
+                };
+                
+                const preset = modePresets[state.mode];
+                for (const key in preset) {
+                    state.macros[key] = preset[key];
+                }
+                
+                updateUI();
+            };
+        });
+
+        // ============================================================================
+        // VOICE SLIDERS
+        // ============================================================================
+        
+        document.getElementById('driveSlider').oninput = function() {
+            state.voice.drive = this.value / 100;
+            document.getElementById('driveFill').style.width = this.value + '%';
+        };
+
+        document.getElementById('tuneSlider').oninput = function() {
+            state.voice.tune = this.value / 100;
+            document.getElementById('tuneFill').style.width = this.value + '%';
+        };
+
+        document.getElementById('ratio1Slider').oninput = function() {
+            state.voice.ratio1 = this.value / 100;
+            document.getElementById('ratio1Fill').style.width = this.value + '%';
+        };
+
+        document.getElementById('ratio2Slider').oninput = function() {
+            state.voice.ratio2 = this.value / 100;
+            document.getElementById('ratio2Fill').style.width = this.value + '%';
+        };
+
+        document.getElementById('fmIndexSlider').oninput = function() {
+            state.voice.fmIndex = this.value / 100;
+            document.getElementById('fmIndexFill').style.width = this.value + '%';
+        };
+
+        // ============================================================================
+        // FX SLIDERS
+        // ============================================================================
+        
+        document.getElementById('delayMixSlider').oninput = function() {
+            state.fx.delayMix = this.value / 100;
+            document.getElementById('delayMixFill').style.width = this.value + '%';
+            if (initialized && window.audioEngine) {
+                window.audioEngine.delay.wet.value = state.fx.delayMix;
+            }
+        };
+
+        document.getElementById('delayTimeSlider').oninput = function() {
+            state.fx.delayTime = this.value / 100;
+            document.getElementById('delayTimeFill').style.width = this.value + '%';
+            if (initialized && window.audioEngine) {
+                const times = ['16n', '16n.', '8n', '8n.', '4n', '4n.', '2n'];
+                const idx = Math.floor(state.fx.delayTime * (times.length - 1));
+                window.audioEngine.delay.delayTime.value = times[idx];
+            }
+        };
+
+        document.getElementById('delayFbSlider').oninput = function() {
+            state.fx.delayFb = this.value / 100;
+            document.getElementById('delayFbFill').style.width = this.value + '%';
+            if (initialized && window.audioEngine) {
+                window.audioEngine.delay.feedback.value = state.fx.delayFb;
+            }
+        };
+
+        document.getElementById('reverbSlider').oninput = function() {
+            state.fx.reverb = this.value / 100;
+            document.getElementById('reverbFill').style.width = this.value + '%';
+            if (initialized && window.audioEngine) {
+                window.audioEngine.reverb.wet.value = state.fx.reverb;
+            }
+        };
+
+        // ============================================================================
+        // SCENE CONTROLS
+        // ============================================================================
+        
+        document.getElementById('sceneABtn').onclick = function() {
+            document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            state.currentScene = 'A';
+            if (state.scenes.A) {
+                loadScene(state.scenes.A);
+            }
+        };
+
+        document.getElementById('sceneBBtn').onclick = function() {
+            document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            state.currentScene = 'B';
+            if (state.scenes.B) {
+                loadScene(state.scenes.B);
+            }
+        };
+
+        document.getElementById('saveSceneBtn').onclick = function() {
+            state.scenes[state.currentScene] = saveCurrentScene();
+            console.log(`💾 Scene ${state.currentScene} saved`);
+        };
+
+        document.getElementById('morphSlider').oninput = function() {
+            state.morphAmount = this.value / 100;
+            document.getElementById('morphFill').style.width = this.value + '%';
+        };
+
+        // Test tone button - bypasses sequencer to test audio chain
+        document.getElementById('testToneBtn').onclick = async function() {
+            await initAudio();
+            const engine = window.audioEngine;
+            if (engine) {
+                engine.fmSynth.triggerAttackRelease('C3', 0.5);
+                console.log('🔊 Test tone triggered');
+            } else {
+                console.error('❌ No audio engine');
+            }
+        };
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+        
+        window.addEventListener('load', () => {
+            console.log('🚀 Percaloid Engine v2 loading...');
+            initGrid();
+            initKnobs();
+            updateUI();
+            console.log('✨ Ready! Press play to unleash the beast.');
+        });
+    </script>
+</body>
+</html>
